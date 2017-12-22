@@ -8,9 +8,6 @@
             [hickory.select :as s]
             [environ.core :refer [env]]))
 
-(def page
-  "http://thesmartlocal.com/read/cheap-food-orchard")
-
 (def re-postal-code #"[sS]\(?\d{6}\)?")
 
 (defn url->hickory
@@ -20,25 +17,25 @@
       parse
       as-hickory))
 
-(defn get-postal-code-locs
+(defn- get-postal-code-locs
   "Find all the locs containing postal codes"
   [hloc-zip]
   (s/select-locs (s/find-in-text re-postal-code) hloc-zip))
 
-(defn get-earlier-header
+(defn- get-earlier-header
   "Given a loc, find the header just above or before this loc"
   [hloc-zip]
   (s/left-pred hloc-zip (apply s/or (map s/tag [:h1 :h2 :h3 :h4]))))
 
-(defn get-content
+(defn- get-content
   "Given a node, return all content in a string"
   [node]
   (if-let [content (:content node)]
     (str/join (map get-content content))
     node))
 
-(defn get-place-address-map
-  "Takes a hickory and returns a map of all the places and addresses on the page"
+(defn hickory->data
+  "Takes a hickory and returns a data of all the places and addresses on the page"
   [hickory]
   (let [postal-code-locs (get-postal-code-locs hickory)
         header-locs (map get-earlier-header postal-code-locs)
@@ -52,7 +49,16 @@
                        (map get-content)
                        (map #(str/replace % #"[\u00a0\s]+" " "))
                        (map str/trim))]
-    (zipmap headers addresses)))
+    (map #(reduce (fn [r [k v]] (assoc r k v)) {} (partition 2 %)) 
+         (partition 4 (interleave (repeat :place) headers
+                                  (repeat :address) addresses)))))
+
+(defn data-add-geocode
+  "Takes a data and adds on geocoding"
+  [data]
+  (pmap (fn [{:keys [place address] :as d}] 
+          (assoc d :latlng (geocode address)))
+        data))
 
 (defn geocode
   [address]

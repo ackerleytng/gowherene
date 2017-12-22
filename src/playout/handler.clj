@@ -3,7 +3,8 @@
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [ring.middleware.json :refer [wrap-json-response]]
-            [ring.util.response :as resp]))
+            [ring.util.response :as resp]
+            [playout.reader.core :refer [url->hickory hickory->data data-add-geocode]]))
 
 (defroutes site-routes
   (GET "/" [] (resp/redirect "/index.html"))
@@ -12,7 +13,11 @@
 (defroutes api-routes
   (GET "/parse" [url]
        (println "incoming" url) 
-       (resp/response url))
+       (-> url
+           url->hickory
+           hickory->data
+           data-add-geocode
+           resp/response))
   (route/not-found "Not Found"))
 
 (defroutes app
