@@ -6,6 +6,7 @@
                  [compojure "1.5.1"]
                  [ring/ring-defaults "0.2.1"]
                  [ring/ring-json "0.4.0"]
+                 [environ "1.1.0"]
                  ;; For reader
                  [clj-http "3.7.0"]
                  [hickory "0.7.1"]]
