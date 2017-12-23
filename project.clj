@@ -8,7 +8,9 @@
                  [ring/ring-json "0.4.0"]
                  [environ "1.1.0"]
                  ;; For reader
+                 [medley "1.0.0"]
                  [clj-http "3.7.0"]
+                 [slingshot "0.12.2"]
                  [hickory "0.7.1"]]
   :plugins [[lein-ring "0.9.7"]]
   :ring {:handler playout.handler/app}
