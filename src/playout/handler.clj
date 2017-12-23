@@ -13,11 +13,13 @@
 (defroutes api-routes
   (GET "/parse" [url]
        (println "incoming" url) 
-       (-> url
-           url->hickory
-           hickory->data
-           data-add-geocode
-           resp/response))
+       (let [result (->> url
+                         url->hickory
+                         hickory->data
+                         data-add-geocode
+                         (filter  #(:latlng %))
+                         )]
+         (resp/response result)))
   (route/not-found "Not Found"))
 
 (defroutes app
