@@ -1,5 +1,6 @@
 const labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 var map;
+var markers = [];
 
 function initMap() {
   const singapore = {lat: 1.352083, lng: 103.819836};
@@ -18,8 +19,10 @@ function plotHandler(e) {
   
   $.getJSON("/parse", {"url": url}, function(data) {
     console.log(["response", data]);
+    
+    markers.map(function(m) { m.setMap(null); });
 
-    data.map(function(item, i) {
+    markers = data.map(function(item, i) {
       var infowindow = new google.maps.InfoWindow({
         content: `<p><b>${item["place"]}</b></p>` +
           `<p>${item["address"]}</p>`
@@ -33,6 +36,8 @@ function plotHandler(e) {
       marker.addListener('click', function() {
         infowindow.open(map, marker);
       });
+      
+      return marker;
     });
   });
   
