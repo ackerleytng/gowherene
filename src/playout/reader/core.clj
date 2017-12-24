@@ -10,7 +10,19 @@
             [medley.core :refer [take-upto]]
             [slingshot.slingshot :refer [try+ throw+]]))
 
-(def re-postal-code #"\b(?:[0-7][0-9]|8[0-3])\d{4}\b")
+(def re-postal-code
+  "Regex that matches Singapore postal codes.
+     According to URA, the largest postal code prefix in Singapore is 83
+     (74 is not a valid prefix, but it is included in this regex)"
+  #"\b(?:[0-7][0-9]|8[0-3])\d{4}\b")
+
+(def re-address
+  "Regex to match for address labels in text"
+  #"[Aa]ddress:?")
+
+(def re-spaces
+  "Regex to be used to replace all &nbsp;s as well as spaces"
+  #"[\u00a0\s]+")
 
 (defn url->hickory
   [url]
@@ -19,20 +31,61 @@
       parse
       as-hickory))
 
+(defn get-all-tags
+  "Given a hickory, get all the tags in this hickory"
+  ([hickory] (get-all-tags (hickory-zip hickory) #{}))
+  ([loc tags]
+   (cond
+     (zip/end? loc) tags
+     :else (let [tag (:tag (zip/node loc))]
+             (recur (zip/next loc) (conj tags tag))))))
+
+(defn remove-tags
+  "Given a hickory, return a hickory without the tags in to-remove"
+  [to-remove hickory]
+  ((fn [loc]
+     (if (zip/end? loc)
+       ;; zip/root returns just the node, not a full zipper
+       (zip/root loc)
+       (recur (zip/next (if (some #(= (:tag (zip/node loc)) %)
+                                  to-remove)
+                          (zip/remove loc)
+                          loc)))))
+   (hickory-zip hickory)))
+
+(def address-cap
+  "We use (s/has-child (s/has-child (s/find-in-text re-address)))
+     to match the `Address: ` label followed by the actual address.
+     Since re-address could potentially match stray `address` words in text,
+     we cap this search at address-cap.
+  <blah>
+    <blah0>
+      <blah>Address: </blah>
+    </blah0>
+    <blah1 />
+    <blah... We don't want too many of these here./>
+    <blah... We don't want too many of these here./>
+    <blah.address-cap+1 />
+  </blah>"
+  10)
+
 (defn- get-postal-code-locs
   "Find all the locs containing postal codes"
   [hloc-zip]
-  (s/select-locs (s/or
-                  ;; Marked by the word address
-                  (s/has-child (s/has-child (s/find-in-text #"[Aa]ddress")))
-                  ;; Contains postal code
-                  (s/and (apply s/and (map (comp s/not s/tag)
-                                           ;; and is not in these tags
-                                           [:script :img :noscript]))
-                         (s/find-in-text re-postal-code)))
-                 hloc-zip))
+  (->> hloc-zip
+       (s/select-locs (s/or
+                       ;; Contains postal code
+                       (s/find-in-text re-postal-code)
+                       ;; Marked by the word address
+                       (s/has-child (s/has-child (s/find-in-text re-address)))))
+       ;; Filter out these
+       (filter #(> address-cap ((comp count :content zip/node) %)))))
 
-(def earlier-header-steps 64)
+(def earlier-header-steps
+  "We use this to cap the search upwards for a header.
+     We don't want to find a stray address somewhere and then
+     misidentify a random navbar header for this address"
+  64)
 
 (defn- get-earlier-header
   "Given a loc, find the header just above or before this loc.
@@ -48,7 +101,8 @@
 
 (defn- get-content
   "Given a node, return all content in a string, until the first <br>
-     The aux function returns a pair (string should-stop) where string
+     or the end of this tree of tags
+   The aux function returns a pair (string should-stop) where string
      is the data to be accumulated and should-stop stops execution if necessary"
   [node]
   (first ((fn aux [n]
@@ -59,31 +113,34 @@
                           (some second useful)))
                   :else (list n false))) node)))
 
-(defn- node->address
-  [node]
-  (-> node
+(defn- loc->address
+  [loc]
+  (-> loc
       zip/node
       get-content
-      (str/replace  #"[\u00a0\s]+" " ")
-      (str/replace-first #"[aA]ddress: " "")
+      (str/replace re-spaces " ")
+      (str/replace-first re-address "")
       str/trim))
+
+(def uninteresting-tags [:ins :script :noscript :img :iframe :head :link :footer :header])
 
 (defn hickory->data
   "Takes a hickory and returns a data of all the places and addresses on the page"
   [hickory]
-  (let [postal-code-locs (get-postal-code-locs hickory)
+  (let [postal-code-locs (get-postal-code-locs
+                          (remove-tags uninteresting-tags hickory))
         header-locs (filter identity (map get-earlier-header postal-code-locs))
         headers (->> header-locs
                      (map zip/node)
                      (map get-content)
-                     (map #(str/replace % #"[\u00a0\s]+" " "))
+                     (map #(str/replace % re-spaces " "))
                      (map str/trim))
-        addresses (map node->address postal-code-locs)]
+        addresses (map loc->address postal-code-locs)]
     (map #(reduce (fn [r [k v]] (assoc r k v)) {} (partition 2 %))
          (partition 4 (interleave (repeat :place) headers
                                   (repeat :address) addresses)))))
 
-(defn data-lookup 
+(defn data-lookup
   [data place]
   (filter #(= place (:place %)) data))
 
@@ -96,7 +153,7 @@
                                       (if (> (count existing-address) (count address))
                                         existing-address
                                         address)
-                                      address))) 
+                                      address)))
                {})
        (map (fn [[place address]]
               {:place place :address address}))))
@@ -157,4 +214,3 @@
     (fn [{:keys [place address] :as d}]
       (assoc d :latlng (geocode address)))
     data)))
-
