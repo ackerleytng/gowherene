@@ -59,14 +59,14 @@
                           (some second useful)))
                   :else (list n false))) node)))
 
-(defn- loc->address
-  "Given a loc, return the address"
-  [hloc-zip]
-  (->> hloc-zip
-       zip/node
-       :content
-       (filter string?)
-       (str/join "")))
+(defn- node->address
+  [node]
+  (-> node
+      zip/node
+      get-content
+      (str/replace  #"[\u00a0\s]+" " ")
+      (str/replace-first #"[aA]ddress: " "")
+      str/trim))
 
 (defn hickory->data
   "Takes a hickory and returns a data of all the places and addresses on the page"
@@ -78,18 +78,33 @@
                      (map get-content)
                      (map #(str/replace % #"[\u00a0\s]+" " "))
                      (map str/trim))
-        addresses (->> postal-code-locs
-                       (map loc->address)
-                       (map #(str/replace % #"[\u00a0\s]+" " "))
-                       (map str/trim))]
+        addresses (map node->address postal-code-locs)]
     (map #(reduce (fn [r [k v]] (assoc r k v)) {} (partition 2 %))
          (partition 4 (interleave (repeat :place) headers
                                   (repeat :address) addresses)))))
 
+(defn data-lookup 
+  [data place]
+  (filter #(= place (:place %)) data))
+
+(defn cleanup-addresses
+  "Takes data and dedupes according to headers, picks the longer address"
+  [data]
+  (->> data
+       (reduce (fn [accum {:keys [place address]}]
+                 (assoc accum place (if-let [existing-address (get accum place)]
+                                      (if (> (count existing-address) (count address))
+                                        existing-address
+                                        address)
+                                      address))) 
+               {})
+       (map (fn [[place address]]
+              {:place place :address address}))))
+
 (defn geocode-google
   ([address]
    ;; Default to 3 tries
-   (geocode address 3))
+   (geocode-google address 3))
   ([address tries]
    (let [response (try+ (-> (client/get
                              "https://maps.googleapis.com/maps/api/geocode/json"
@@ -125,7 +140,6 @@
                      :body
                      json/read-json)
         result (get-in response [:results 0])]
-    (clojure.pprint/pprint result)
     {:lat (Float/parseFloat (:LATITUDE result))
      :lng (Float/parseFloat (:LONGITUDE result))}))
 
@@ -143,3 +157,4 @@
     (fn [{:keys [place address] :as d}]
       (assoc d :latlng (geocode address)))
     data)))
+
