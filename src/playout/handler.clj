@@ -20,9 +20,10 @@
                          url->hickory
                          hickory->data
                          cleanup-addresses
-                         data-add-geocode
-                         (filter  #(:latlng %)))]
-         (resp/response result)))
+                         data-add-geocode)
+             result-remove-nils (filter  #(:latlng %) result)]
+         (clojure.pprint/pprint result)
+         (resp/response result-remove-nils)))
   (route/not-found "Not Found"))
 
 (defroutes app
