@@ -4,10 +4,7 @@
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [ring.middleware.json :refer [wrap-json-response]]
             [ring.util.response :as resp]
-            [playout.reader.core :refer [url->hickory 
-                                         hickory->data
-                                         cleanup-addresses
-                                         data-add-geocode]]))
+            [playout.reader.core :as reader]))
 
 (defroutes site-routes
   (GET "/" [] (resp/redirect "/index.html"))
@@ -15,15 +12,7 @@
 
 (defroutes api-routes
   (GET "/parse" [url]
-       (println "incoming" url) 
-       (let [result (->> url
-                         url->hickory
-                         hickory->data
-                         cleanup-addresses
-                         data-add-geocode)
-             result-remove-nils (filter  #(:latlng %) result)]
-         (clojure.pprint/pprint result)
-         (resp/response result-remove-nils)))
+       (resp/response (reader/handle url)))
   (route/not-found "Not Found"))
 
 (defroutes app

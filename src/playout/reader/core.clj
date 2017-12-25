@@ -214,3 +214,15 @@
     (fn [{:keys [place address] :as d}]
       (assoc d :latlng (geocode address)))
     data)))
+
+(defn handle
+  [url]
+  (println "incoming" url) 
+  (let [result (->> url
+                    url->hickory
+                    hickory->data
+                    cleanup-addresses
+                    data-add-geocode)
+        result-remove-nils (filter  #(:latlng %) result)]
+    (clojure.pprint/pprint result)
+    result-remove-nils))
