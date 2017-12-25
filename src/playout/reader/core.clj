@@ -70,9 +70,9 @@
   8)
 
 (defn get-postal-code-locs
-  "Find all the locs containing postal codes"
-  [hloc-zip]
-  (->> hloc-zip
+  "Given a hickory, find all the locs containing postal codes"
+  [hickory]
+  (->> hickory
        (s/select-locs (s/or
                        ;; Contains postal code
                        (s/find-in-text re-postal-code)
