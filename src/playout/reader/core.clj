@@ -3,6 +3,7 @@
             [hickory.zip :refer [hickory-zip]]
             [clj-http.client :as client]
             [clojure.zip :as zip]
+            [clojure.pprint :refer [pprint]]
             [clojure.string :as str]
             [clojure.data.json :as json]
             [hickory.select :as s]
@@ -82,23 +83,12 @@
                                       locs-address)]
     (clojure.set/union (set locs-postal-code) (set locs-address-filtered))))
 
-(def earlier-header-steps
-  "We use this to cap the search upwards for a header.
-     We don't want to find a stray address somewhere and then
-     misidentify a random navbar header for this address"
-  64)
-
 (defn get-earlier-header
   "Given a loc, find the header just above or before this loc.
   Limit the search backwards to earlier-header-steps"
   [hloc-zip]
   (s/prev-pred hloc-zip
-               (let [dist (atom earlier-header-steps)]
-                 (fn [loc]
-                   (if (zero? @dist) nil
-                       (do
-                         (swap! dist dec)
-                         ((apply s/or (map s/tag [:h1 :h2 :h3 :h4])) loc)))))))
+               (apply s/or (map s/tag [:h1 :h2 :h3 :h4]))))
 
 (defn get-content
   "Given a node, return all content in a string, until the first <br>
@@ -125,36 +115,74 @@
 
 (def uninteresting-tags [:ins :script :noscript :img :iframe :head :link :footer :header])
 
+(defn update-if-exists
+  [map key f]
+  (if (key map)
+    (update map key f)
+    map))
+
+(defn simplify-datum
+  "Use this to reduce the verbosity of datum (good for pprinting)"
+  ([datum] (simplify-datum 0 datum))
+  ([verbosity datum]
+   (let [locs [:postal-code-loc :header-loc]]
+     (cond
+       (> verbosity 1) datum 
+       (> verbosity 0) (reduce #(update-if-exists %1 %2 zip/node) datum locs)
+       :else (reduce #(update-if-exists %1 %2 (fn [_] :exists)) datum locs)))))
+
+(defn tag-with
+  [tag info & datum]
+  (assoc datum tag info))
+
+(defn update-with-tag
+  [new-tag old-tag f datum]
+  (let [old-info (old-tag datum)
+        new-info (f old-info)]
+    (assoc datum new-tag new-info)))
+
+(defn loc->place
+  [loc]
+  (-> loc
+      zip/node
+      get-content
+      (str/replace re-spaces " ")
+      str/trim))
+
 (defn hickory->data
   "Takes a hickory and returns a data of all the places and addresses on the page"
   [hickory]
-  (let [postal-code-locs (get-postal-code-locs
-                          (remove-tags uninteresting-tags hickory))
-        header-locs (filter identity (map get-earlier-header postal-code-locs))
-        headers (->> header-locs
-                     (map zip/node)
-                     (map get-content)
-                     (map #(str/replace % re-spaces " "))
-                     (map str/trim))
-        addresses (map loc->address postal-code-locs)]
-    (map #(reduce (fn [r [k v]] (assoc r k v)) {} (partition 2 %))
-         (partition 4 (interleave (repeat :place) headers
-                                  (repeat :address) addresses)))))
+  (->> hickory
+       (remove-tags uninteresting-tags)
+       get-postal-code-locs
+       (map (partial tag-with :postal-code-loc))
+       (map (partial update-with-tag :header-loc :postal-code-loc get-earlier-header))
+       ;; If we can't find the header, don't display it
+       (filter :header-loc)
+       (map (partial update-with-tag :place :header-loc loc->place))
+       (map (partial update-with-tag :address :postal-code-loc loc->address))))
 
 (defn data-lookup
   [data place]
   (filter #(= place (:place %)) data))
 
 (defn cleanup-addresses
-  "Takes data and dedupes according to headers, picks the longer address"
+  "Takes data and dedupes according to headers, 
+     picks the address with the postal code, or if not, the longer address
+   Retains only the :place and :address keys from data"
   [data]
   (->> data
        (reduce (fn [accum {:keys [place address]}]
-                 (assoc accum place (if-let [existing-address (get accum place)]
-                                      (if (> (count existing-address) (count address))
-                                        existing-address
-                                        address)
-                                      address)))
+                 (assoc accum place 
+                        (if-let [existing-address (get accum place)]
+                          (cond
+                            ;; If there is a postal code in it, take the postal code
+                            (re-find re-postal-code existing-address) existing-address
+                            (re-find re-postal-code address) address
+                            ;; Take the longer one (hopefully more precise
+                            (> (count existing-address) (count address)) existing-address
+                            :else address)
+                          address)))
                {})
        (map (fn [[place address]]
               {:place place :address address}))))
@@ -221,9 +249,9 @@
   (let [result (->> hickory
                     hickory->data
                     cleanup-addresses
-                    data-add-geocode)
+                    (pmap (partial update-with-tag :latlng :address geocode)))
         result-remove-nils (filter  #(:latlng %) result)]
-    (clojure.pprint/pprint result)
+    (pprint result)
     result-remove-nils))
 
 (defn handle
