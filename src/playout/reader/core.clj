@@ -67,9 +67,9 @@
     <blah... We don't want too many of these here./>
     <blah.address-cap+1 />
   </blah>"
-  10)
+  8)
 
-(defn- get-postal-code-locs
+(defn get-postal-code-locs
   "Find all the locs containing postal codes"
   [hloc-zip]
   (->> hloc-zip
@@ -87,7 +87,7 @@
      misidentify a random navbar header for this address"
   64)
 
-(defn- get-earlier-header
+(defn get-earlier-header
   "Given a loc, find the header just above or before this loc.
   Limit the search backwards to earlier-header-steps"
   [hloc-zip]
@@ -99,7 +99,7 @@
                          (swap! dist dec)
                          ((apply s/or (map s/tag [:h1 :h2 :h3 :h4])) loc)))))))
 
-(defn- get-content
+(defn get-content
   "Given a node, return all content in a string, until the first <br>
      or the end of this tree of tags
    The aux function returns a pair (string should-stop) where string
@@ -113,7 +113,7 @@
                           (some second useful)))
                   :else (list n false))) node)))
 
-(defn- loc->address
+(defn loc->address
   [loc]
   (-> loc
       zip/node
@@ -215,14 +215,19 @@
       (assoc d :latlng (geocode address)))
     data)))
 
-(defn handle
-  [url]
-  (println "incoming" url) 
-  (let [result (->> url
-                    url->hickory
+(defn process
+  [hickory]
+  (let [result (->> hickory
                     hickory->data
                     cleanup-addresses
                     data-add-geocode)
         result-remove-nils (filter  #(:latlng %) result)]
     (clojure.pprint/pprint result)
     result-remove-nils))
+
+(defn handle
+  [url]
+  (println "incoming" url) 
+  (->> url
+       url->hickory
+       process))
