@@ -72,14 +72,15 @@
 (defn get-postal-code-locs
   "Given a hickory, find all the locs containing postal codes"
   [hickory]
-  (->> hickory
-       (s/select-locs (s/or
-                       ;; Contains postal code
-                       (s/find-in-text re-postal-code)
-                       ;; Marked by the word address
-                       (s/has-child (s/has-child (s/find-in-text re-address)))))
-       ;; Filter out these
-       (filter #(> address-cap ((comp count :content zip/node) %)))))
+  (let [;; Contains postal code
+        locs-postal-code (s/select-locs
+                          (s/find-in-text re-postal-code) hickory)
+        ;; Marked by the word address
+        locs-address (s/select-locs
+                      (s/has-child (s/has-child (s/find-in-text re-address))) hickory)
+        locs-address-filtered (filter #(> address-cap ((comp count :content zip/node) %)) 
+                                      locs-address)]
+    (clojure.set/union (set locs-postal-code) (set locs-address-filtered))))
 
 (def earlier-header-steps
   "We use this to cap the search upwards for a header.
