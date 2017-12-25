@@ -16,6 +16,10 @@ To start a web server for the application, run:
 $ lein ring server
 ```
 
+## Testing
+
+To write test cases, update the test case, then evaluate it (`C-M-x`), then re-run test cases (`C-c C-t C-n`)
+
 ## Deploying on heroku
 
 Install the heroku toolbelt, then
