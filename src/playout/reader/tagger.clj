@@ -6,6 +6,13 @@
             [clojure.string :as str]))
 
 #_("
+We make the assumption here that people will use the same
+  html tags, classes and attributes for a single address.
+
+We also make the assumption that we have already \"zoomed in\" to tags surrounding an address.
+The loc provided to bucket-loc should already be quite close to 
+  where the address is suspected to be.
+
 1. Get content of tags
 2. For each content, get the path (see loc->path)
 3. Bucket the content according to path
@@ -180,10 +187,16 @@ If the slot has been 'taken', the address value does not increase anymore.
           {} 
           (walk-locs loc)))
 
+(def re-spaces
+  "Regex to be used to replace all &nbsp;s as well as spaces"
+  #"[\u00a0\s]+")
+
 (defn buckets->addresses
   [buckets]
   (let [address-threshold 8]
-    (map str/trim (filter #(> (address-value %) address-threshold) (vals buckets)))))
+    (filter #(> (address-value %) address-threshold) (->> (vals buckets)
+                                                          (map #(str/replace % re-spaces " "))
+                                                          (map str/trim)))))
 
 ;; Some functions for debugging
 

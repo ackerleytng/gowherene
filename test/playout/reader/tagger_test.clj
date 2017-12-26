@@ -272,4 +272,39 @@
                "2 Orchard Turn #01-21 and #02-11 Singapore 238801"
                "Departure/Transit Lounge South Unit 026-078 Terminal 2 Singapore 819643"
                "Departure/Transit Lounge South Unit 02-18 Terminal 3 Singapore 819663")
+             (buckets->addresses buckets)))))
+  
+  (testing "liu-sha-bao"
+    (let [zipper (->> "<p><span style=\"color: #d47978;\"><strong>Price</strong>:</span> $3.80 for 3<br><span style=\"color: #d47978;\"><strong>Address</strong>:</span><span style=\"line-height: 1.3em;\">&nbsp;214 Geylang Road, Lorong 18<br></span><strong style=\"line-height: 1.3em;\"><strong style=\"color: #d47978;\">Alternative:</strong></strong><span style=\"line-height: 1.3em;\">&nbsp;</span><a href=\"http://www.sweechoon.com/\" target=\"_blank\" style=\"line-height: 1.3em;\">Swee Choon</a></p>"
+                      parse-fragment
+                      (map as-hickory)
+                      first
+                      hickory-zip)
+          buckets (bucket-loc zipper)]
+
+      (is (= {'({:tag :p, :attrs nil}
+                {:tag :span, :attrs {:style "color: #d47978;"}}
+                {:tag :strong, :attrs nil})
+              "Price",
+              '({:tag :p, :attrs nil}
+                {:tag :span, :attrs {:style "color: #d47978;"}})
+              ":",
+              '({:tag :p, :attrs nil}) " $3.80 for 3",
+              '({:tag :p, :attrs nil}
+                {:tag :span, :attrs {:style "line-height: 1.3em;"}})
+              " 214 Geylang Road, Lorong 18",
+              '({:tag :p, :attrs nil}
+                {:tag :strong, :attrs {:style "line-height: 1.3em;"}}
+                {:tag :strong, :attrs {:style "color: #d47978;"}})
+              "Alternative:",
+              '({:tag :p, :attrs nil}
+                {:tag :a,
+                 :attrs
+                 {:href "http://www.sweechoon.com/",
+                  :target "_blank",
+                  :style "line-height: 1.3em;"}})
+              "Swee Choon"}
+             buckets))
+      (is (= '("214 Geylang Road, Lorong 18")
              (buckets->addresses buckets))))))
+
