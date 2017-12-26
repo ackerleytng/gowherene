@@ -3,37 +3,26 @@
             [hickory.zip :refer [hickory-zip]]
             [clojure.zip :as zip]
             [clojure.set :as set]
-            [clojure.pprint :refer [pprint]]))
+            [clojure.string :as str]))
 
 #_("
-   1. Get content of tags
-   2. For each content, get the path 5 steps up
-   3. Bucket the content according to path 5 steps up
-   4. Add to bucket only if it increases the address value
-
-   5. Address value is determined by existence of keywords in the string
-   5a. Postal code.
-   5b. Keywords like \"Road\" \"Jalan\"
-   5c. Numbers with # in it
-   5d. Numbers prior to road
-
-   6. An address has \"slots\" , such as
-   6a. Postal code
-   6b. Unit Number
-   If the slot has been 'taken', the address value does not increase anymore.
-   (Hence it is not added to the bucket)
+1. Get content of tags
+2. For each content, get the path (see loc->path)
+3. Bucket the content according to path
+4. Add content to bucket only if it increases the address value
+5. Address value is determined by existence of keywords in the string
+   + Postal code.
+   + Keywords like \"Road\" \"Jalan\"
+   + Numbers with # in it
+   + Numbers prior to road
+6. Our address has 4 \"slots\"
+   + Unit Number
+   + House Number
+   + Road Name
+   + Postal Code
+If the slot has been 'taken', the address value does not increase anymore.
+(Hence it is not added to the bucket)
 ")
-
-(defn loc->path
-  [loc]
-  (let [path-length 5]
-    (->> loc
-         zip/path
-         reverse
-         (take path-length)
-         reverse
-         ;; Keep only the attrs and tag information
-         (map (fn [{:keys [tag attrs]}] {:tag tag :attrs attrs})))))
 
 ;; Functions to find parts of an address
 
@@ -49,7 +38,7 @@
   "Regex that matches Singapore postal codes.
      According to URA, the largest postal code prefix in Singapore is 83
      (74 is not a valid prefix, but it is included in this regex)"
-  #"(?i)(?:\bsingapore\s|\bs\s|\bs)?\(?\b(?:[0-7][0-9]|8[0-3])\d{4}\b\)?")
+  #"(?i)(?:\bsingapore\s|\bs\s|\bs|\b)\(?(?:[0-7][0-9]|8[0-3])\d{4}\b\)?")
 
 (defn find-postal-code
   [s]
@@ -58,7 +47,7 @@
 (def re-unit-number
   "Regex that matches unit numbers
      May include & or and to join unit numbers and slashes to indicate more units"
-  #"(?i)#\d{1,4}\s*-\s*[\d/]{1,6}(?:\s+(?:and|&)\s+#\d{1,4}\s*-\s*[\d/]{1,6})*")
+  #"(?i)#?\d{1,4}\s*-\s*[\d/]{1,6}(?:\s+(?:and|&)\s+#\d{1,4}\s*-\s*[\d/]{1,6})*")
 
 (defn find-unit-number
   [s]
@@ -111,9 +100,92 @@
                             (set exact-matches))]
     (some identity (map #(re-find % s) patterns))))
 
-(defn get-all-locs
+;; Functions to manipulate locs
+
+(defn walk-locs
+  "Walk locs in this zipper in a lazy way"
   [zipper]
   (take-while (complement zip/end?) (iterate zip/next zipper)))
+
+(defn loc->path
+  [loc]
+  (let [path-length 5]
+    (->> loc
+         zip/path
+         reverse
+         (take path-length)
+         reverse
+         ;; Keep only the attrs and tag information
+         (map (fn [{:keys [tag attrs]}] {:tag tag :attrs attrs})))))
+
+(defn tag-string
+  "Tag a string with parts of an address.
+     Returns [a vector of labelled pairs, the remaining parts of the string, trimmed]"
+  [string]
+  (let [fns [:postal-code find-postal-code
+             :unit-number find-unit-number
+             :road-name find-road-name
+             :house-number find-house-number]]
+    (reduce (fn [[v s] [k f]]
+              (if-let [match (f s)]
+                [;; Add match to vector
+                 (conj v k match)
+                 ;; Wipe out whatever was already used
+                 (str/trim (str/replace-first s match ""))]
+                ;; If it couldn't be found, do nothing
+                [v s]))
+            [[] string]
+            (partition 2 fns))))
+
+(defn assign-points
+  "Given [address parts, remaining parts of the string], assign points to this tagging"
+  [[address-parts remaining-string]]
+  (let [scores {:postal-code 10
+                :unit-number 8
+                :road-name 5
+                :house-number 2}]
+    (+ (reduce (fn [sum [k _]] (+ sum (k scores))) 0 (partition 2 address-parts))
+       ;; Bonus points based on remaining words
+       (let [clean (-> remaining-string
+                       (str/replace "," "")
+                       (str/replace #"\s+" " ")
+                       str/trim)
+             words-left (count (str/split clean #" "))]
+         (- 4 words-left)))))
+
+(defn address-value
+  "Compute the address value of string"
+  [string]
+  (-> string
+      tag-string
+      assign-points))
+
+(defn bucket-loc
+  [loc]
+  (reduce (fn [buckets loc]
+            (if (string? (zip/node loc))
+              ;; Operate only on string nodes
+              (let [content (zip/node loc)
+                    path (loc->path loc)]
+                (if-let [prev-string (get buckets path)]
+                  (let [new-string (str/join " " [prev-string content])]
+                    ;; Replace the bucket with a longer string if the longer string 
+                    ;;   has a longer address value
+                    (if (> (address-value new-string) (address-value prev-string))
+                      (assoc buckets path new-string)
+                      buckets))
+                  ;; Create a new bucket with content
+                  (assoc buckets path content)))
+              buckets))
+          {} 
+          (walk-locs loc)))
+
+(defn buckets->addresses
+  [buckets]
+  (let [address-threshold 8]
+    (map str/trim (filter #(> (address-value %) address-threshold) (vals buckets)))))
+
+;; Some functions for debugging
 
 (defn find-nil-tags
   [zipper]
@@ -122,42 +194,8 @@
               nil-content-tags
               (conj nil-content-tags (:tag (zip/node loc)))))
           #{}
-          (get-all-locs zipper)))
+          (walk-locs zipper)))
 
 (defn find-tags
   [f zipper]
-  (filter f (get-all-locs zipper)))
-
-(defn tag
-  [tags loc]
-  (if (not (= :element (:type (zip/node loc))))
-    (pprint (zip/node loc))))
-
-(def tmp-zipper
-  (->> (slurp "test/playout/reader/fixtures/cheap-food-orchard")
-       parse
-       as-hickory
-       hickory-zip))
-
-(def tmp-plain
-  (->> "testing"
-       parse-fragment
-       first
-       as-hickory
-       hickory-zip))
-
-(defn tmp []
-  (->> tmp-zipper
-       (find-tags (fn [loc]
-                    (let [n (zip/node loc)]
-                      (and (= :i (:tag n))
-                           (nil? (:content n))))))
-       (map zip/node)
-       clojure.pprint/pprint)
-  )
-
-(defn tmp2 []
-  (find-nil-tags tmp-zipper))
-
-(defn tmp3 []
-  (clojure.pprint/pprint (zip/up tmp-plain)))
+  (filter f (walk-locs zipper)))

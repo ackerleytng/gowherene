@@ -10,12 +10,14 @@
   (let [addresses ["201 Henderson Road #07-05 Apex Singapore 159545"
                    "Orchard Central, 181 Orchard Road, #07-10/11, S(238896)"]]
     (testing "find-postal-code"
+      (is (= nil (find-postal-code "88588179")))
       (is (= "588179" (find-postal-code "588179")))
       (is (= "Singapore 159545" (find-postal-code (first addresses))))
       (is (= nil (find-postal-code "Singapore159545")))
+      (is (= "S159545" (find-postal-code "S159545")))
       (is (= "S(238896)" (find-postal-code (second addresses))))
       (is (= "S (238896)" (find-postal-code "Orchard Road S (238896)"))))
-    
+
     (testing "find-road-name"
       (is (= "Henderson Road" (find-road-name (first addresses))))
       (is (let [found (find-road-name (second addresses))]
@@ -43,7 +45,7 @@
       (is (= "bishopsgate" (find-road-name "whatever bishopsgate nothing")))
       (is (= "lengkong tujoh" (find-road-name "whatever lengkong tujoh nothing")))
       (is (= "Saint Michael's Road" (find-road-name "07–03, Saint Michael's Road 328005"))))
-    
+
     (testing "find-unit-number"
       (is (= "#07-05" (find-unit-number (first addresses))))
       (is (= "#07-10/11" (find-unit-number (second addresses))))
@@ -56,7 +58,7 @@
       (is (= "#01-05/06 & #01-05/06" (find-unit-number "#01-05/06 & #01-05/06")))
       ;; Allow some room for error here
       (is (= "#01-3//3" (find-unit-number "#01-3//3"))))
-    
+
     (testing "find-house-number"
       (is (= "201" (find-house-number (first addresses))))
       (is (= "181" (find-house-number (second addresses))))
@@ -65,32 +67,209 @@
       (is (= nil (find-house-number "Block 12345")))
       (is (= "34" (find-house-number "34")))
       (is (= "34 a" (find-house-number "34 a Super Drive")))
-      (is (= "34a" (find-house-number "34a Super Drive"))))
-    )
-  )
+      (is (= "34a" (find-house-number "34a Super Drive"))))))
 
-(deftest test-tagger-cheap-food
-  (testing "stuff"
+(deftest test-address-value
+  (testing "simple"
+    (is (= 28 (address-value "123 Sesame Street #05-31 S123456")))
+    (is (= 18 (address-value "123 Sesame Street #05-31")))
+    (is (= 11 (address-value "#05-31")))
+    (is (= 10 (address-value "123 Sesame Street")))
+    (is (= 5 (address-value "123"))))
+
+  (testing "liu-sha-baos"
+    (is (= 10 (address-value "#02-01 Plaza Singapura")))
+    (is (= 10 (address-value "1012A Upper Serangoon Road")))
+    (is (= 18 (address-value "#05-42/45 Paragon, 290 Orchard Road")))
+    (is (= 9 (address-value "2 Lorong Mambong, Holland Village")))
+    (is (= 9 (address-value "214 Geylang Road, Lorong 18")))
+    (is (= 17 (address-value "91 Bencoolen Street, #01-49 Sunshine Plaza"))))
+
+  (testing "non-addresses"
+    (is (= -37 (address-value "OKB stands for 2 things. 1. One Kampung Bahru (the address of this joint) and 2. Our Kind of Bar, Bistro, Bakery. Having received rave reviews for its baked goods, this place is now being thrust into the limelight again for their other dishes. Expect European food with an Asian twist.")))
+    (is (= 2 (address-value "Price: $5.50 for 3")))))
+
+(deftest test-bucket-loc
+  (testing "level-0"
+    (let [zipper (->> "Orchard Central, 181 Orchard Road, #07-10/11, S(238896)"
+                      parse-fragment
+                      (map as-hickory)
+                      first
+                      hickory-zip)
+          buckets (bucket-loc zipper)]
+      (is (= {'() "Orchard Central, 181 Orchard Road, #07-10/11, S(238896)"}
+             buckets))
+
+      (is (= '("Orchard Central, 181 Orchard Road, #07-10/11, S(238896)")
+             (buckets->addresses buckets)))))
+
+  (testing "level-1"
     (let [zipper (->> "<p><span style=\"color: #d47978;\"><strong>Address:</strong></span> Orchard Central, 181 Orchard Road, #07-10/11, S(238896)</p>"
                       parse-fragment
                       (map as-hickory)
                       first
-                      hickory-zip
-                      )]
-      
-      ;; (pprint (loc->path (zip/down (zip/down zipper))))
-      ;; (reduce tag [] (get-all-locs zipper))
-      )))
+                      hickory-zip)
+          buckets (bucket-loc zipper)]
 
-(deftest test-tagger-tiffany  
-  (testing "stuff"
-    (let [zipper (->> "<tr><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl00_lblStoreName\" class=\"storeName\">ION Orchard</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl00_lblAddress1\">2 Orchard Turn<br>#01-21 and #02-11<br>Singapore 238801<br>+65 6884 4880<br>Open Daily: 10am- 10pm<br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl00_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/ion-orchard-street\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/ion-orchard-street';return false\">View on Map</a></li></ul></div><br></td><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl01_lblStoreName\" class=\"storeName\">Singapore Changi Airport Terminal 2</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl01_lblAddress1\">Departure/Transit Lounge South<br>Unit 026-078 Terminal 2<br>Singapore 819643<br>+65 6543 2443<br>Open Daily: 6:00am – 1:00am <br><br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl01_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-2\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-2';return false\">View on Map</a></li></ul></div><br></td><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl02_lblStoreName\" class=\"storeName\">Singapore Changi Airport Terminal 3</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl02_lblAddress1\">Departure/Transit Lounge South<br>Unit 02-18 Terminal 3<br>Singapore 819663<br>+65 6441 0018<br>Open Daily: 6:00am – 1:00am <br><br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl02_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-3\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-3';return false\">View on Map</a></li></ul></div><br></td><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl03_lblStoreName\" class=\"storeName\">The Shoppes at Marina Bay Sands</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl03_lblAddress1\">2 Bayfront Avenue #B2-66/67/68<br>Singapore 018972<br>+65 6688 7728<br><br>Sun to Thu: 10:30-23:00<br>Fri to Sat: 10:30-23:30<br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl03_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/shoppes-marina-bay-sands\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/shoppes-marina-bay-sands';return false\">View on Map</a></li></ul></div><br></td></tr>"
+      (is (= {'({:tag :p, :attrs nil}
+                {:tag :span, :attrs {:style "color: #d47978;"}}
+                {:tag :strong, :attrs nil})
+              "Address:",
+              '({:tag :p, :attrs nil})
+              " Orchard Central, 181 Orchard Road, #07-10/11, S(238896)"}
+             buckets))
+      (is (= '("Orchard Central, 181 Orchard Road, #07-10/11, S(238896)")
+             (buckets->addresses buckets)))))
+
+  (testing "level-tiffany"
+    (let [zipper (->> "<table><tr><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl00_lblStoreName\" class=\"storeName\">ION Orchard</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl00_lblAddress1\">2 Orchard Turn<br>#01-21 and #02-11<br>Singapore 238801<br>+65 6884 4880<br>Open Daily: 10am- 10pm<br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl00_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/ion-orchard-street\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/ion-orchard-street';return false\">View on Map</a></li></ul></div><br></td><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl01_lblStoreName\" class=\"storeName\">Singapore Changi Airport Terminal 2</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl01_lblAddress1\">Departure/Transit Lounge South<br>Unit 026-078 Terminal 2<br>Singapore 819643<br>+65 6543 2443<br>Open Daily: 6:00am – 1:00am <br><br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl01_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-2\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-2';return false\">View on Map</a></li></ul></div><br></td><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl02_lblStoreName\" class=\"storeName\">Singapore Changi Airport Terminal 3</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl02_lblAddress1\">Departure/Transit Lounge South<br>Unit 02-18 Terminal 3<br>Singapore 819663<br>+65 6441 0018<br>Open Daily: 6:00am – 1:00am <br><br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl02_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-3\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-3';return false\">View on Map</a></li></ul></div><br></td><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl03_lblStoreName\" class=\"storeName\">The Shoppes at Marina Bay Sands</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl03_lblAddress1\">2 Bayfront Avenue #B2-66/67/68<br>Singapore 018972<br>+65 6688 7728<br><br>Sun to Thu: 10:30-23:00<br>Fri to Sat: 10:30-23:30<br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl03_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/shoppes-marina-bay-sands\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/shoppes-marina-bay-sands';return false\">View on Map</a></li></ul></div><br></td></tr></table>"
                       parse-fragment
                       (map as-hickory)
-                      hickory-zip
-                      )]
-      
-      ;;(pprint zipper)
-      )))
-  
+                      first
+                      hickory-zip)
+          buckets (bucket-loc zipper)]
 
+      (is (= buckets
+             {'({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil}
+                {:tag :span,
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl03_lblAddress1"}})
+              "2 Bayfront Avenue #B2-66/67/68 Singapore 018972",
+              '({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil}
+                {:tag :span,
+                 :attrs
+                 {:id "rptGroup_ctl01_dtlStoreList_ctl03_lblStoreName",
+                  :class "storeName"}})
+              "The Shoppes at Marina Bay Sands",
+              '({:tag :td, :attrs nil}
+                {:tag :div,
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl01_MapLink"}}
+                {:tag :ul,
+                 :attrs
+                 {:id "contentLinkList",
+                  :class "storeList",
+                  :style "clear:both;margin-left:0",
+                  :visible "true"}}
+                {:tag :li, :attrs {:class "bullet"}}
+                {:tag :a,
+                 :attrs
+                 {:href
+                  "http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-2",
+                  :onclick
+                  "window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-2';return false"}})
+              "View on Map",
+              '({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil}
+                {:tag :span,
+                 :attrs
+                 {:id "rptGroup_ctl01_dtlStoreList_ctl01_lblStoreName",
+                  :class "storeName"}})
+              "Singapore Changi Airport Terminal 2",
+              '({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil}
+                {:tag :span,
+                 :attrs
+                 {:id "rptGroup_ctl01_dtlStoreList_ctl02_lblStoreName",
+                  :class "storeName"}})
+              "Singapore Changi Airport Terminal 3",
+              '({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil}
+                {:tag :span,
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl00_lblAddress1"}})
+              "2 Orchard Turn #01-21 and #02-11 Singapore 238801",
+              '({:tag :td, :attrs nil}
+                {:tag :div,
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl02_MapLink"}}
+                {:tag :ul,
+                 :attrs
+                 {:id "contentLinkList",
+                  :class "storeList",
+                  :style "clear:both;margin-left:0",
+                  :visible "true"}}
+                {:tag :li, :attrs {:class "bullet"}}
+                {:tag :a,
+                 :attrs
+                 {:href
+                  "http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-3",
+                  :onclick
+                  "window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-3';return false"}})
+              "View on Map",
+              '({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil}
+                {:tag :span,
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl01_lblAddress1"}})
+              "Departure/Transit Lounge South Unit 026-078 Terminal 2 Singapore 819643",
+              '({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil})
+              " ",
+              '({:tag :td, :attrs nil}
+                {:tag :div,
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl03_MapLink"}}
+                {:tag :ul,
+                 :attrs
+                 {:id "contentLinkList",
+                  :class "storeList",
+                  :style "clear:both;margin-left:0",
+                  :visible "true"}}
+                {:tag :li, :attrs {:class "bullet"}}
+                {:tag :a,
+                 :attrs
+                 {:href
+                  "http://international.tiffany.com/jewelry-stores/shoppes-marina-bay-sands",
+                  :onclick
+                  "window.location.href='https://international.tiffany.com/jewelry-stores/map/shoppes-marina-bay-sands';return false"}})
+              "View on Map",
+              '({:tag :td, :attrs nil}
+                {:tag :div,
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl00_MapLink"}}
+                {:tag :ul,
+                 :attrs
+                 {:id "contentLinkList",
+                  :class "storeList",
+                  :style "clear:both;margin-left:0",
+                  :visible "true"}}
+                {:tag :li, :attrs {:class "bullet"}}
+                {:tag :a,
+                 :attrs
+                 {:href
+                  "http://international.tiffany.com/jewelry-stores/ion-orchard-street",
+                  :onclick
+                  "window.location.href='https://international.tiffany.com/jewelry-stores/map/ion-orchard-street';return false"}})
+              "View on Map",
+              '({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil}
+                {:tag :span,
+                 :attrs
+                 {:id "rptGroup_ctl01_dtlStoreList_ctl00_lblStoreName",
+                  :class "storeName"}})
+              "ION Orchard",
+              '({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil}
+                {:tag :span,
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl02_lblAddress1"}})
+              "Departure/Transit Lounge South Unit 02-18 Terminal 3 Singapore 819663"}))
+
+      (is (= '("2 Bayfront Avenue #B2-66/67/68 Singapore 018972"
+               "2 Orchard Turn #01-21 and #02-11 Singapore 238801"
+               "Departure/Transit Lounge South Unit 026-078 Terminal 2 Singapore 819643"
+               "Departure/Transit Lounge South Unit 02-18 Terminal 3 Singapore 819663")
+             (buckets->addresses buckets))))))
