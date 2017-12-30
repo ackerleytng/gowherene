@@ -4,12 +4,7 @@
             [hickory.core :refer [as-hickory parse]]
             [playout.reader.core :refer :all]))
 
-(defn get-index [header]
-  (if-let [num (re-find #"(\d+)\." header)]
-    (Integer/parseInt (get num 1))
-    nil))
-
-(deftest test-reader
+(deftest test-reader-cheap-food-orchard
   (testing "cheap-food-orchard"
     (let [hickory (->> (slurp "test/playout/reader/fixtures/cheap-food-orchard")
                        parse
@@ -38,8 +33,9 @@
       (is (= 23 (->> response
                      (map :address)
                      (map #(re-find re-postal-code %))
-                     count)))))
+                     count))))))
 
+(deftest test-reader-no-gst-restaurants
   (testing "no-gst-restaurants"
     (let [hickory (->> (slurp "test/playout/reader/fixtures/no-gst-restaurants")
                        parse
@@ -49,11 +45,12 @@
           tags-removed (remove-tags uninteresting-tags hickory)
           postal-code-locs (get-postal-code-locs tags-removed)
 
-          data (hickory->data hickory)
-          data-cleaned (cleanup-addresses data)]
+          loc (first postal-code-locs)
+
+          data (hickory->data hickory)]
 
       ;; There shouldn't be any blank addresses
-      (is (= (count (filter (comp clojure.string/blank? :address) data-cleaned)) 0))
+      (is (= (count (filter (comp clojure.string/blank? :address) data)) 0))
 
       ;; Check that remove-tags has some effect
       ;;   More tags appear here than in uninteresting-tags because
@@ -71,8 +68,9 @@
                         (map :place)
                         (map get-index)
                         (filter identity)))
-             (range 1 19)))))
+             (range 1 19))))))
 
+(deftest test-reader-no-gst-cafes
   (testing "no-gst-cafes"
     (let [hickory (->> (slurp "test/playout/reader/fixtures/no-gst-cafes")
                        parse
@@ -82,11 +80,10 @@
           tags-removed (remove-tags uninteresting-tags hickory)
           postal-code-locs (get-postal-code-locs tags-removed)
 
-          data (hickory->data hickory)
-          data-cleaned (cleanup-addresses data)]
+          data (hickory->data hickory)]
 
       ;; There shouldn't be any blank addresses
-      (is (= (count (filter (comp clojure.string/blank? :address) data-cleaned)) 0))
+      (is (= (count (filter (comp clojure.string/blank? :address) data)) 0))
 
       ;; Check that remove-tags has some effect
       ;;   More tags appear here than in uninteresting-tags because
@@ -116,10 +113,10 @@
           ;; hickory->data, split up
           tags-removed (remove-tags uninteresting-tags hickory)
           postal-code-locs (get-postal-code-locs tags-removed)
-          
+
           data-pc-locs (map (partial tag-with :postal-code-loc) postal-code-locs)
           data-h-pc-locs (map (partial update-with-tag
-                                       :header-loc :postal-code-loc get-earlier-header) 
+                                       :header-loc :postal-code-loc get-earlier-header)
                               data-pc-locs)
           data-locs (filter :header-loc data-h-pc-locs)
           data-places (map (partial update-with-tag :place :header-loc loc->place) data-locs)
@@ -130,20 +127,19 @@
       (is (= #{:script :iframe :footer :head :link :noscript :img}
              (clojure.set/difference (get-all-tags hickory)
                                      (get-all-tags tags-removed))))
-      
+
       (is (= 6 (count postal-code-locs)))
 
       (is (= 6 (count (map :postal-code-loc data-pc-locs))))
-      
+
       ;; Managed to find 6 headers
       (is (= 6 (count (filter :header-loc data-h-pc-locs))))
       (is (= 6 (count (filter :postal-code-loc data-h-pc-locs))))
-      
+
       (is (= 6 (count data-locs)))
-      
+
       (is (= 6 (count (filter :place data-places))))
 
       ;; This test case is failing now
-      (is (= 6 (count (filter (comp (partial re-find re-postal-code) :address) 
+      (is (= 6 (count (filter (comp (partial re-find re-postal-code) :address)
                               data-places-addrs)))))))
-

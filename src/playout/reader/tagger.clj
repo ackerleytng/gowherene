@@ -109,10 +109,30 @@ If the slot has been 'taken', the address value does not increase anymore.
 
 ;; Functions to manipulate locs
 
+;; Thanks! jamesmacaulay/zelkova
+(defn loc-after
+  "Returns a new zipper location that skips the whole subtree at `loc`."
+  [loc]
+  (or (zip/right loc)
+      (loop [p loc]
+        (if (zip/up p)
+          (or (zip/right (zip/up p))
+              (recur (zip/up p)))
+          [(zip/node p) :end]))))
+
 (defn walk-locs
-  "Walk locs in this zipper in a lazy way"
-  [zipper]
-  (take-while (complement zip/end?) (iterate zip/next zipper)))
+  "Walk locs in this zipper in a lazy way. Only walks this node and all sub nodes."
+  [zipper] 
+  ;; Find loc to stop at
+  (let [stop-here (loc-after zipper)]
+    (take-while (fn [loc] (not 
+                           (or (zip/end? loc)
+                               (= loc stop-here))))
+                (iterate zip/next zipper))))
+
+(defn count-locs-walked
+  [loc]
+  (count (walk-locs loc)))
 
 (defn loc->path
   [loc]
@@ -212,3 +232,4 @@ If the slot has been 'taken', the address value does not increase anymore.
 (defn find-tags
   [f zipper]
   (filter f (walk-locs zipper)))
+

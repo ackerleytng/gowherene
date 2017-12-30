@@ -8,8 +8,9 @@
             [clojure.data.json :as json]
             [hickory.select :as s]
             [environ.core :refer [env]]
-            [medley.core :refer [take-upto]]
-            [slingshot.slingshot :refer [try+ throw+]]))
+            [medley.core :refer [take-upto distinct-by]]
+            [slingshot.slingshot :refer [try+ throw+]]
+            [playout.reader.tagger :as tagger]))
 
 (def re-postal-code
   "Regex that matches Singapore postal codes.
@@ -79,7 +80,7 @@
         ;; Marked by the word address
         locs-address (s/select-locs
                       (s/has-child (s/has-child (s/find-in-text re-address))) hickory)
-        locs-address-filtered (filter #(> address-cap ((comp count :content zip/node) %)) 
+        locs-address-filtered (filter #(> address-cap ((comp count :content zip/node) %))
                                       locs-address)]
     (clojure.set/union (set locs-postal-code) (set locs-address-filtered))))
 
@@ -107,11 +108,9 @@
 (defn loc->address
   [loc]
   (-> loc
-      zip/node
-      get-content
-      (str/replace re-spaces " ")
-      (str/replace-first re-address "")
-      str/trim))
+      tagger/bucket-loc
+      tagger/buckets->addresses
+      first))
 
 (def uninteresting-tags [:ins :script :noscript :img :iframe :head :link :footer :header])
 
@@ -127,9 +126,9 @@
   ([verbosity datum]
    (let [locs [:postal-code-loc :header-loc]]
      (cond
-       (> verbosity 1) datum 
+       (> verbosity 1) datum
        (> verbosity 0) (reduce #(update-if-exists %1 %2 zip/node) datum locs)
-       :else (reduce #(update-if-exists %1 %2 (fn [_] :exists)) datum locs)))))
+       :else (reduce #(update-if-exists %1 %2 tagger/count-locs-walked) datum locs)))))
 
 (defn tag-with
   [tag info & datum]
@@ -165,27 +164,6 @@
 (defn data-lookup
   [data place]
   (filter #(= place (:place %)) data))
-
-(defn cleanup-addresses
-  "Takes data and dedupes according to headers, 
-     picks the address with the postal code, or if not, the longer address
-   Retains only the :place and :address keys from data"
-  [data]
-  (->> data
-       (reduce (fn [accum {:keys [place address]}]
-                 (assoc accum place 
-                        (if-let [existing-address (get accum place)]
-                          (cond
-                            ;; If there is a postal code in it, take the postal code
-                            (re-find re-postal-code existing-address) existing-address
-                            (re-find re-postal-code address) address
-                            ;; Take the longer one (hopefully more precise
-                            (> (count existing-address) (count address)) existing-address
-                            :else address)
-                          address)))
-               {})
-       (map (fn [[place address]]
-              {:place place :address address}))))
 
 (defn geocode-google
   ([address]
@@ -244,19 +222,32 @@
       (assoc d :latlng (geocode address)))
     data)))
 
+(defn get-index [header]
+  (if-let [num (re-find #"(\d+)\." header)]
+    (Integer/parseInt (get num 1))
+    nil))
+
+(defn publish
+  [data]
+  (->> data
+       (filter #(:latlng %))
+       (map #(dissoc % :postal-code-loc :header-loc))))
+
 (defn process
   [hickory]
-  (let [result (->> hickory
-                    hickory->data
-                    cleanup-addresses
-                    (pmap (partial update-with-tag :latlng :address geocode)))
-        result-remove-nils (filter  #(:latlng %) result)]
-    (pprint result)
-    result-remove-nils))
+  (let [raw-result (->> hickory
+                        hickory->data
+                        (distinct-by (fn [d] [(:place d) (:address d)]))
+                        (pmap (partial update-with-tag :latlng :address geocode)))
+
+        result (publish raw-result)]
+    (pprint (sort-by (comp get-index :place)
+                     (map simplify-datum raw-result)))
+    result))
 
 (defn handle
   [url]
-  (println "incoming" url) 
+  (println "incoming" url)
   (->> url
        url->hickory
        process))
