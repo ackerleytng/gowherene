@@ -22,6 +22,12 @@ To write test cases, update the test case, then evaluate it (`C-M-x`), then re-r
 
 ## Deploying on heroku
 
+Package for deployment with
+
+```
+$ lein ring uberjar
+```
+
 Install the heroku toolbelt, then
 
 ```
