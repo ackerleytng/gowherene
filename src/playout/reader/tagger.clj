@@ -169,6 +169,15 @@ If the slot has been 'taken', the address value does not increase anymore.
   "Regex to be used to replace all &nbsp;s as well as spaces"
   #"[\u00a0\s]+")
 
+(defn count-words
+  [str]
+  (-> str
+      (str/replace "," "")
+      (str/replace re-spaces " ")
+      str/trim
+      (str/split #" ")
+      count))
+
 (defn assign-points
   "Given [address parts, remaining parts of the string], assign points to this tagging"
   [[address-parts remaining-string]]
@@ -180,11 +189,7 @@ If the slot has been 'taken', the address value does not increase anymore.
     (if (pos? raw-score)
       (+ raw-score
          ;; Bonus points based on remaining words
-         (let [clean (-> remaining-string
-                         (str/replace "," "")
-                         (str/replace re-spaces " ")
-                         str/trim)
-               words-left (count (str/split clean #" "))]
+         (let [words-left (count-words remaining-string)]
            (- 4 words-left)))
       raw-score)))
 
@@ -211,15 +216,19 @@ If the slot has been 'taken', the address value does not increase anymore.
 (defn all-partitions
   "Given a vector, return all possible partitions
      For example [:a :b :c] becomes ((:a) (:b) (:c) (:a :b) (:b :c) (:a :b :c))"
-  [v]
-  (mapcat #(partition % 1 v) (range 1 (inc (count v)))))
+  ([v] (all-partitions v (inc (count v))))
+  ([max-partition-size v]
+   (mapcat #(partition % 1 v) (range 1 max-partition-size))))
 
 (defn compute-address-values
   [string-vector]
-  (->> string-vector
-       all-partitions
-       (map #(str/join " " %))
-       (map (fn [s] [s (address-value s)]))))
+  (let [;; I assume that they won't split addresses into more than max-address-partitions parts
+        ;; Setting a cap prevents generating too many partitions for processing
+        max-address-partitions 5]
+    (->> string-vector
+         (all-partitions max-address-partitions)
+         (map #(str/join " " %))
+         (map (fn [s] [s (address-value s)])))))
 
 (defn clean-bucket
   [[string value]]
