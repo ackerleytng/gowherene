@@ -17,7 +17,8 @@
       (is (= "S159545" (find-postal-code "S159545")))
       (is (= "S(238896)" (find-postal-code (second addresses))))
       (is (= "S (238896)" (find-postal-code "Orchard Road S (238896)")))
-      (is (= nil (find-postal-code " $11"))))
+      (is (= nil (find-postal-code " $11")))
+      (is (= nil (find-postal-code " $8.90"))))
 
     (testing "find-road-name"
       (is (= "Henderson Road" (find-road-name (first addresses))))
@@ -46,7 +47,8 @@
       (is (= "bishopsgate" (find-road-name "whatever bishopsgate nothing")))
       (is (= "lengkong tujoh" (find-road-name "whatever lengkong tujoh nothing")))
       (is (= "Saint Michael's Road" (find-road-name "07–03, Saint Michael's Road 328005")))
-      (is (= nil (find-road-name " $11"))))
+      (is (= nil (find-road-name " $11")))
+      (is (= nil (find-road-name " $8.90"))))
 
     (testing "find-unit-number"
       (is (= "#07-05" (find-unit-number (first addresses))))
@@ -64,7 +66,8 @@
       (is (= "#B1-65/66" (find-unit-number " Raffles City Shopping Centre, ;#B1-65/66 Singapore 179103")))
       ;; Allow some room for error here
       (is (= "#01-3//3" (find-unit-number "#01-3//3")))
-      (is (= nil (find-road-name " $11"))))
+      (is (= nil (find-road-name " $11")))
+      (is (= nil (find-road-name " $8.90"))))
 
     (testing "find-house-number"
       (is (= "201" (find-house-number (first addresses))))
@@ -75,7 +78,8 @@
       (is (= "34" (find-house-number "34")))
       (is (= "34 a" (find-house-number "34 a Super Drive")))
       (is (= "34a" (find-house-number "34a Super Drive")))
-      (is (= nil (find-road-name " $11"))))))
+      (is (= nil (find-road-name " $11")))
+      (is (= nil (find-road-name " $8.90"))))))
 
 (deftest test-address-value
   (testing "simple"
