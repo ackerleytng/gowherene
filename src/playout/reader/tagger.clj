@@ -10,7 +10,7 @@ We make the assumption here that people will use the same
   html tags, classes and attributes for a single address.
 
 We also make the assumption that we have already \"zoomed in\" to tags surrounding an address.
-The loc provided to bucket-loc should already be quite close to 
+The loc provided to loc->buckets should already be quite close to 
   where the address is suspected to be.
 
 1. Get content of tags
@@ -165,6 +165,10 @@ If the slot has been 'taken', the address value does not increase anymore.
             [[] string]
             (partition 2 fns))))
 
+(def re-spaces
+  "Regex to be used to replace all &nbsp;s as well as spaces"
+  #"[\u00a0\s]+")
+
 (defn assign-points
   "Given [address parts, remaining parts of the string], assign points to this tagging"
   [[address-parts remaining-string]]
@@ -191,34 +195,31 @@ If the slot has been 'taken', the address value does not increase anymore.
       tag-string
       assign-points))
 
-(defn bucket-loc
+(defn loc->buckets
+  "Bucket all the strings in a loc and below according to loc->path
+     Returns a map of loc->path keys to vectors of strings"
   [loc]
-  (reduce (fn [buckets loc]
-            (if (string? (zip/node loc))
-              ;; Operate only on string nodes
-              (let [content (zip/node loc)
-                    path (loc->path loc)]
-                (if-let [[prev-string prev-value] (get buckets path)]
-                  (let [new-string (str/join " " [prev-string content])
-                        new-value (address-value new-string)]
-                    ;; Replace the bucket with a longer string if the longer string 
-                    ;;   has a longer address value
-                    (if (> new-value prev-value)
-                      (assoc buckets path [new-string new-value])
-                      buckets))
-                  ;; If address value of content is positive
-                  (let [value (address-value content)]
-                    (if (pos? value)
-                      ;; Create a new bucket with content
-                      (assoc buckets path [content value])
-                      buckets))))
-              buckets))
-          {} 
-          (walk-locs loc)))
+  (->> (walk-locs loc)
+       ;; Retain only string nodes
+       (map (fn [l] [l (zip/node l)]))
+       (filter (comp string? second))
+       ;; Compute the bucket keys with loc->path
+       (map (fn [[l string]] [(loc->path l) string]))
+       ;; Do the bucketing
+       (reduce (fn [m [path s]] (merge-with into m {path [s]})) {})))
 
-(def re-spaces
-  "Regex to be used to replace all &nbsp;s as well as spaces"
-  #"[\u00a0\s]+")
+(defn all-partitions
+  "Given a vector, return all possible partitions
+     For example [:a :b :c] becomes ((:a) (:b) (:c) (:a :b) (:b :c) (:a :b :c))"
+  [v]
+  (mapcat #(partition % 1 v) (range 1 (inc (count v)))))
+
+(defn compute-address-values
+  [string-vector]
+  (->> string-vector
+       all-partitions
+       (map #(str/join " " %))
+       (map (fn [s] [s (address-value s)]))))
 
 (defn clean-bucket
   [[string value]]
@@ -228,8 +229,10 @@ If the slot has been 'taken', the address value does not increase anymore.
 (defn buckets->addresses
   [buckets]
   (let [address-threshold 8]
-    (filter #(> (second %) address-threshold) (->> (vals buckets)
-                                                   (map clean-bucket)))))
+    (->> (vals buckets)
+         (mapcat compute-address-values)
+         (filter #(> (second %) address-threshold))
+         (map clean-bucket))))
 
 ;; Some functions for debugging
 
