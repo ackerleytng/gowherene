@@ -65,7 +65,7 @@ If the slot has been 'taken', the address value does not increase anymore.
   "Finds road name patterns with hints from https://www.wikiwand.com/en/Road_names_in_Singapore"
   [s]
   (let [malay-prefix-patterns (map #(re-pattern
-                                     ;; maximum of 3 words after the prefix
+                                     ;; Maximum of 3 words after the prefix
                                      ;; except for the word the
                                      (str "(?i)\\b" %
                                           "\\b(?: \\b(?!the\\b)(?:[a-z']+\\b|\\d+)\\b){1,3}"))
@@ -176,7 +176,7 @@ If the slot has been 'taken', the address value does not increase anymore.
        ;; Bonus points based on remaining words
        (let [clean (-> remaining-string
                        (str/replace "," "")
-                       (str/replace #"\s+" " ")
+                       (str/replace re-spaces " ")
                        str/trim)
              words-left (count (str/split clean #" "))]
          (- 4 words-left)))))
@@ -195,15 +195,20 @@ If the slot has been 'taken', the address value does not increase anymore.
               ;; Operate only on string nodes
               (let [content (zip/node loc)
                     path (loc->path loc)]
-                (if-let [prev-string (get buckets path)]
-                  (let [new-string (str/join " " [prev-string content])]
+                (if-let [[prev-string prev-value] (get buckets path)]
+                  (let [new-string (str/join " " [prev-string content])
+                        new-value (address-value new-string)]
                     ;; Replace the bucket with a longer string if the longer string 
                     ;;   has a longer address value
-                    (if (> (address-value new-string) (address-value prev-string))
-                      (assoc buckets path new-string)
+                    (if (> new-value prev-value)
+                      (assoc buckets path [new-string new-value])
                       buckets))
-                  ;; Create a new bucket with content
-                  (assoc buckets path content)))
+                  ;; If address value of content is positive
+                  (let [value (address-value content)]
+                    (if (pos? value)
+                      ;; Create a new bucket with content
+                      (assoc buckets path [content value])
+                      buckets))))
               buckets))
           {} 
           (walk-locs loc)))
@@ -212,12 +217,16 @@ If the slot has been 'taken', the address value does not increase anymore.
   "Regex to be used to replace all &nbsp;s as well as spaces"
   #"[\u00a0\s]+")
 
+(defn clean-bucket
+  [[string value]]
+  [(str/trim (str/replace string re-spaces " "))
+   value])
+
 (defn buckets->addresses
   [buckets]
   (let [address-threshold 8]
-    (filter #(> (address-value %) address-threshold) (->> (vals buckets)
-                                                          (map #(str/replace % re-spaces " "))
-                                                          (map str/trim)))))
+    (filter #(> (second %) address-threshold) (->> (vals buckets)
+                                                   (map clean-bucket)))))
 
 ;; Some functions for debugging
 
