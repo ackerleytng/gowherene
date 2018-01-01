@@ -26,9 +26,17 @@
   "Regex to be used to replace all &nbsp;s as well as spaces"
   #"[\u00a0\s]+")
 
+(defn cleanup-input
+  [url]
+  (cond
+    (str/starts-with? url "http://") url
+    :else (str "http://" url)))
+
 (defn url->hickory
   [url]
-  (-> (client/get url)
+  (-> url
+      cleanup-input
+      client/get 
       :body
       parse
       as-hickory))
@@ -107,10 +115,12 @@
 
 (defn loc->address
   [loc]
-  (-> loc
-      tagger/bucket-loc
-      tagger/buckets->addresses
-      first))
+  (->> loc
+       tagger/loc->buckets
+       tagger/buckets->addresses
+       (sort-by second)
+       last
+       first))
 
 (def uninteresting-tags [:ins :script :noscript :img :iframe :head :link :footer :header])
 
@@ -159,6 +169,8 @@
        ;; If we can't find the header, don't display it
        (filter :header-loc)
        (map (partial update-with-tag :place :header-loc loc->place))
+       (map (partial update-with-tag :buckets :postal-code-loc tagger/loc->buckets))
+       (map (partial update-with-tag :addresses :buckets tagger/buckets->addresses))
        (map (partial update-with-tag :address :postal-code-loc loc->address))))
 
 (defn data-lookup
@@ -209,9 +221,10 @@
 
 (defn geocode
   [address]
-  (if-let [postal-code (re-find re-postal-code address)]
-    (geocode-onemap postal-code)
-    (geocode-google address)))
+  (when address
+    (if-let [postal-code (re-find re-postal-code address)]
+      (geocode-onemap postal-code)
+      (geocode-google address))))
 
 (defn data-add-geocode
   "Takes a data and adds on geocoding"
@@ -231,7 +244,7 @@
   [data]
   (->> data
        (filter #(:latlng %))
-       (map #(dissoc % :postal-code-loc :header-loc))))
+       (map #(select-keys % [:place :address :latlng]))))
 
 (defn process
   [hickory]
@@ -239,7 +252,6 @@
                         hickory->data
                         (distinct-by (fn [d] [(:place d) (:address d)]))
                         (pmap (partial update-with-tag :latlng :address geocode)))
-
         result (publish raw-result)]
     (pprint (sort-by (comp get-index :place)
                      (map simplify-datum raw-result)))
