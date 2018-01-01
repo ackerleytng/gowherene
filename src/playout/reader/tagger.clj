@@ -54,7 +54,8 @@ If the slot has been 'taken', the address value does not increase anymore.
 (def re-unit-number
   "Regex that matches unit numbers
      May include & or and to join unit numbers and slashes to indicate more units"
-  #"(?i)#?\d{1,4}\s*-\s*[\d/]{1,6}(?:\s+(?:and|&)\s+#\d{1,4}\s*-\s*[\d/]{1,6})*")
+  (let [unit "#?b?\\d{1,4}\\s*-\\s*[a-z]?[\\d/]{1,6}[a-z]?"]
+    (re-pattern (str "(?i)" unit "(?:\\s+(?:and|&)\\s+" unit ")*"))))
 
 (defn find-unit-number
   [s]

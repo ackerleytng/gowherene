@@ -56,6 +56,8 @@
       (is (= "#01-05/06 and  #01-05/06" (find-unit-number "#01-05/06 and  #01-05/06")))
       (is (= "#01-05/06 And  #01-05/06" (find-unit-number "#01-05/06 And  #01-05/06")))
       (is (= "#01-05/06 & #01-05/06" (find-unit-number "#01-05/06 & #01-05/06")))
+      (is (= "#b1-k1" (find-unit-number "#b1-k1")))
+      (is (= "#b1-1b" (find-unit-number "#b1-1b")))
       ;; Allow some room for error here
       (is (= "#01-3//3" (find-unit-number "#01-3//3"))))
 
