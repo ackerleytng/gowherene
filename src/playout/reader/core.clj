@@ -29,14 +29,13 @@
 (defn cleanup-input
   [url]
   (cond
-    (str/starts-with? url "http://") url
+    (re-find #"^https?://" url) url
     :else (str "http://" url)))
 
 (defn url->hickory
   [url]
   (-> url
-      cleanup-input
-      client/get 
+      client/get
       :body
       parse
       as-hickory))
@@ -77,17 +76,30 @@
     <blah... We don't want too many of these here./>
     <blah.address-cap+1 />
   </blah>"
-  8)
+  16)
 
+(defn address-label-like
+  [hzip-loc]
+  (some #(and
+          ;; Matches re-address
+          (re-find re-address %)
+          ;; Does not have too many words (not likely to be labels)
+          (< (tagger/count-words %) 4))
+        (->> (zip/node hzip-loc)
+             :content
+             (filter string?))))
+
+;; TODO rename this function
 (defn get-postal-code-locs
   "Given a hickory, find all the locs containing postal codes"
   [hickory]
   (let [;; Contains postal code
         locs-postal-code (s/select-locs
                           (s/find-in-text re-postal-code) hickory)
-        ;; Marked by the word address
+        ;; Find regions of content near labels like "Address"
         locs-address (s/select-locs
-                      (s/has-child (s/has-child (s/find-in-text re-address))) hickory)
+                      (s/or (s/has-child (s/has-child address-label-like))
+                            (s/has-child address-label-like)) hickory)
         locs-address-filtered (filter #(> address-cap ((comp count :content zip/node) %))
                                       locs-address)]
     (clojure.set/union (set locs-postal-code) (set locs-address-filtered))))
@@ -167,11 +179,14 @@
        (map (partial tag-with :postal-code-loc))
        (map (partial update-with-tag :header-loc :postal-code-loc get-earlier-header))
        ;; If we can't find the header, don't display it
-       (filter :header-loc)
+       ;; (filter :header-loc)
        (map (partial update-with-tag :place :header-loc loc->place))
-       (map (partial update-with-tag :buckets :postal-code-loc tagger/loc->buckets))
-       (map (partial update-with-tag :addresses :buckets tagger/buckets->addresses))
-       (map (partial update-with-tag :address :postal-code-loc loc->address))))
+       ;; Uncomment the following two for debugging
+       ;; (map (partial update-with-tag :buckets :postal-code-loc tagger/loc->buckets))
+       ;; (map (partial update-with-tag :addresses :buckets tagger/buckets->addresses))
+       (map (partial update-with-tag :address :postal-code-loc loc->address))
+       ;; Some postal-code-locs are misidentified, hence addresses cannot be found
+       (filter :address)))
 
 (defn data-lookup
   [data place]
@@ -236,9 +251,10 @@
     data)))
 
 (defn get-index [header]
-  (if-let [num (re-find #"(\d+)\." header)]
-    (Integer/parseInt (get num 1))
-    nil))
+  (and header
+       (if-let [num (re-find #"(\d+)\." header)]
+         (Integer/parseInt (get num 1))
+         nil)))
 
 (defn publish
   [data]
@@ -253,13 +269,15 @@
                         (distinct-by (fn [d] [(:place d) (:address d)]))
                         (pmap (partial update-with-tag :latlng :address geocode)))
         result (publish raw-result)]
-    (pprint (sort-by (comp get-index :place)
-                     (map simplify-datum raw-result)))
+    (pprint (->> raw-result
+                 (map (partial simplify-datum))
+                 (sort-by (comp get-index :place))))
     result))
 
 (defn handle
   [url]
   (println "incoming" url)
   (->> url
+       cleanup-input
        url->hickory
        process))
