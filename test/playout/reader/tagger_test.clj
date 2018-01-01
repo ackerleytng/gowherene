@@ -16,7 +16,8 @@
       (is (= nil (find-postal-code "Singapore159545")))
       (is (= "S159545" (find-postal-code "S159545")))
       (is (= "S(238896)" (find-postal-code (second addresses))))
-      (is (= "S (238896)" (find-postal-code "Orchard Road S (238896)"))))
+      (is (= "S (238896)" (find-postal-code "Orchard Road S (238896)")))
+      (is (= nil (find-postal-code " $11"))))
 
     (testing "find-road-name"
       (is (= "Henderson Road" (find-road-name (first addresses))))
@@ -44,7 +45,8 @@
       (is (= "The Inglewood" (find-road-name "nothing The Inglewood random")))
       (is (= "bishopsgate" (find-road-name "whatever bishopsgate nothing")))
       (is (= "lengkong tujoh" (find-road-name "whatever lengkong tujoh nothing")))
-      (is (= "Saint Michael's Road" (find-road-name "07–03, Saint Michael's Road 328005"))))
+      (is (= "Saint Michael's Road" (find-road-name "07–03, Saint Michael's Road 328005")))
+      (is (= nil (find-road-name " $11"))))
 
     (testing "find-unit-number"
       (is (= "#07-05" (find-unit-number (first addresses))))
@@ -61,7 +63,8 @@
       (is (= "#B1-65/66" (find-unit-number "#B1-65/66")))
       (is (= "#B1-65/66" (find-unit-number " Raffles City Shopping Centre, ;#B1-65/66 Singapore 179103")))
       ;; Allow some room for error here
-      (is (= "#01-3//3" (find-unit-number "#01-3//3"))))
+      (is (= "#01-3//3" (find-unit-number "#01-3//3")))
+      (is (= nil (find-road-name " $11"))))
 
     (testing "find-house-number"
       (is (= "201" (find-house-number (first addresses))))
@@ -71,7 +74,8 @@
       (is (= nil (find-house-number "Block 12345")))
       (is (= "34" (find-house-number "34")))
       (is (= "34 a" (find-house-number "34 a Super Drive")))
-      (is (= "34a" (find-house-number "34a Super Drive"))))))
+      (is (= "34a" (find-house-number "34a Super Drive")))
+      (is (= nil (find-road-name " $11"))))))
 
 (deftest test-address-value
   (testing "simple"
@@ -92,7 +96,9 @@
   (testing "non-addresses"
     (is (= -37 (address-value "OKB stands for 2 things. 1. One Kampung Bahru (the address of this joint) and 2. Our Kind of Bar, Bistro, Bakery. Having received rave reviews for its baked goods, this place is now being thrust into the limelight again for their other dishes. Expect European food with an Asian twist.")))
     (is (= 2 (address-value "Price: $5.50 for 3")))
-    (is (= 3 (address-value "")))))
+    (is (= 0 (address-value "")))
+    (is (= 0 (address-value "  ")))
+    (is (= 0 (address-value " ")))))
 
 (deftest test-bucket-loc-level-0
   (testing "level-0"
@@ -117,12 +123,8 @@
                       hickory-zip)
           buckets (bucket-loc zipper)]
 
-      (is (= {'({:tag :p, :attrs nil}
-                {:tag :span, :attrs {:style "color: #d47978;"}}
-                {:tag :strong, :attrs nil})
-              ["Address:" 3],
-              '({:tag :p, :attrs nil})
-              [" Orchard Central, 181 Orchard Road, #07-10/11, S(238896)" 27]}
+      (is (= '{({:tag :p, :attrs nil})
+               [" Orchard Central, 181 Orchard Road, #07-10/11, S(238896)" 27]}
              buckets))
       (is (= '(["Orchard Central, 181 Orchard Road, #07-10/11, S(238896)" 27])
              (buckets->addresses buckets))))))
@@ -142,25 +144,8 @@
                 {:tag :tr, :attrs nil}
                 {:tag :td, :attrs nil}
                 {:tag :span,
-                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl03_lblAddress1"}})
-               ["2 Bayfront Avenue #B2-66/67/68 Singapore 018972" 28],
-               ({:tag :td, :attrs nil}
-                {:tag :div,
-                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl01_MapLink"}}
-                {:tag :ul,
-                 :attrs
-                 {:id "contentLinkList",
-                  :class "storeList",
-                  :style "clear:both;margin-left:0",
-                  :visible "true"}}
-                {:tag :li, :attrs {:class "bullet"}}
-                {:tag :a,
-                 :attrs
-                 {:href
-                  "http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-2",
-                  :onclick
-                  "window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-2';return false"}})
-               ["View on Map" 1],
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl00_lblAddress1"}})
+               ["2 Orchard Turn #01-21 and #02-11 Singapore 238801" 28],
                ({:tag :table, :attrs nil}
                 {:tag :tbody, :attrs nil}
                 {:tag :tr, :attrs nil}
@@ -175,6 +160,14 @@
                 {:tag :tr, :attrs nil}
                 {:tag :td, :attrs nil}
                 {:tag :span,
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl01_lblAddress1"}})
+               ["Departure/Transit Lounge South Unit 026-078 Terminal 2 Singapore 819643"
+                26],
+               ({:tag :table, :attrs nil}
+                {:tag :tbody, :attrs nil}
+                {:tag :tr, :attrs nil}
+                {:tag :td, :attrs nil}
+                {:tag :span,
                  :attrs
                  {:id "rptGroup_ctl01_dtlStoreList_ctl02_lblStoreName",
                   :class "storeName"}})
@@ -184,96 +177,23 @@
                 {:tag :tr, :attrs nil}
                 {:tag :td, :attrs nil}
                 {:tag :span,
-                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl00_lblAddress1"}})
-               ["2 Orchard Turn #01-21 and #02-11 Singapore 238801" 28],
-               ({:tag :td, :attrs nil}
-                {:tag :div,
-                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl02_MapLink"}}
-                {:tag :ul,
-                 :attrs
-                 {:id "contentLinkList",
-                  :class "storeList",
-                  :style "clear:both;margin-left:0",
-                  :visible "true"}}
-                {:tag :li, :attrs {:class "bullet"}}
-                {:tag :a,
-                 :attrs
-                 {:href
-                  "http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-3",
-                  :onclick
-                  "window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-3';return false"}})
-               ["View on Map" 1],
-               ({:tag :table, :attrs nil}
-                {:tag :tbody, :attrs nil}
-                {:tag :tr, :attrs nil}
-                {:tag :td, :attrs nil}
-                {:tag :span,
-                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl01_lblAddress1"}})
-               ["Departure/Transit Lounge South Unit 026-078 Terminal 2 Singapore 819643"
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl02_lblAddress1"}})
+               ["Departure/Transit Lounge South Unit 02-18 Terminal 3 Singapore 819663"
                 26],
                ({:tag :table, :attrs nil}
                 {:tag :tbody, :attrs nil}
                 {:tag :tr, :attrs nil}
-                {:tag :td, :attrs nil})
-               [" " 3],
-               ({:tag :td, :attrs nil}
-                {:tag :div,
-                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl03_MapLink"}}
-                {:tag :ul,
-                 :attrs
-                 {:id "contentLinkList",
-                  :class "storeList",
-                  :style "clear:both;margin-left:0",
-                  :visible "true"}}
-                {:tag :li, :attrs {:class "bullet"}}
-                {:tag :a,
-                 :attrs
-                 {:href
-                  "http://international.tiffany.com/jewelry-stores/shoppes-marina-bay-sands",
-                  :onclick
-                  "window.location.href='https://international.tiffany.com/jewelry-stores/map/shoppes-marina-bay-sands';return false"}})
-               ["View on Map" 1],
-               ({:tag :td, :attrs nil}
-                {:tag :div,
-                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl00_MapLink"}}
-                {:tag :ul,
-                 :attrs
-                 {:id "contentLinkList",
-                  :class "storeList",
-                  :style "clear:both;margin-left:0",
-                  :visible "true"}}
-                {:tag :li, :attrs {:class "bullet"}}
-                {:tag :a,
-                 :attrs
-                 {:href
-                  "http://international.tiffany.com/jewelry-stores/ion-orchard-street",
-                  :onclick
-                  "window.location.href='https://international.tiffany.com/jewelry-stores/map/ion-orchard-street';return false"}})
-               ["View on Map" 1],
-               ({:tag :table, :attrs nil}
-                {:tag :tbody, :attrs nil}
-                {:tag :tr, :attrs nil}
                 {:tag :td, :attrs nil}
                 {:tag :span,
-                 :attrs
-                 {:id "rptGroup_ctl01_dtlStoreList_ctl00_lblStoreName",
-                  :class "storeName"}})
-               ["ION Orchard" 2],
-               ({:tag :table, :attrs nil}
-                {:tag :tbody, :attrs nil}
-                {:tag :tr, :attrs nil}
-                {:tag :td, :attrs nil}
-                {:tag :span,
-                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl02_lblAddress1"}})
-               ["Departure/Transit Lounge South Unit 02-18 Terminal 3 Singapore 819663"
-                26]}))
+                 :attrs {:id "rptGroup_ctl01_dtlStoreList_ctl03_lblAddress1"}})
+               ["2 Bayfront Avenue #B2-66/67/68 Singapore 018972" 28]}))
 
-      (is (= '(["2 Bayfront Avenue #B2-66/67/68 Singapore 018972" 28]
-               ["2 Orchard Turn #01-21 and #02-11 Singapore 238801" 28]
+      (is (= '(["2 Orchard Turn #01-21 and #02-11 Singapore 238801" 28]
                ["Departure/Transit Lounge South Unit 026-078 Terminal 2 Singapore 819643"
                 26]
                ["Departure/Transit Lounge South Unit 02-18 Terminal 3 Singapore 819663"
-                26])
+                26]
+               ["2 Bayfront Avenue #B2-66/67/68 Singapore 018972" 28])
              (buckets->addresses buckets))))))
 
 (deftest test-bucket-loc-level-liu-sha-bao
@@ -285,28 +205,10 @@
                       hickory-zip)
           buckets (bucket-loc zipper)]
 
-      (is (= '{({:tag :p, :attrs nil}
-                {:tag :span, :attrs {:style "color: #d47978;"}}
-                {:tag :strong, :attrs nil})
-               ["Price" 3],
-               ({:tag :p, :attrs nil}
-                {:tag :span, :attrs {:style "color: #d47978;"}})
-               [":" 3],
-               ({:tag :p, :attrs nil}) [" $3.80 for 3" 3],
+      (is (= '{({:tag :p, :attrs nil}) [" $3.80 for 3" 3],
                ({:tag :p, :attrs nil}
                 {:tag :span, :attrs {:style "line-height: 1.3em;"}})
-               [" 214 Geylang Road, Lorong 18" 9],
-               ({:tag :p, :attrs nil}
-                {:tag :strong, :attrs {:style "line-height: 1.3em;"}}
-                {:tag :strong, :attrs {:style "color: #d47978;"}})
-               ["Alternative:" 3],
-               ({:tag :p, :attrs nil}
-                {:tag :a,
-                 :attrs
-                 {:href "http://www.sweechoon.com/",
-                  :target "_blank",
-                  :style "line-height: 1.3em;"}})
-               ["Swee Choon" 2]}
+               [" 214 Geylang Road, Lorong 18" 9]}
              buckets))
       (is (= '(["214 Geylang Road, Lorong 18" 9])
              (buckets->addresses buckets))))))

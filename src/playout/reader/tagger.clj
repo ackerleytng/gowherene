@@ -171,15 +171,18 @@ If the slot has been 'taken', the address value does not increase anymore.
   (let [scores {:postal-code 10
                 :unit-number 8
                 :road-name 5
-                :house-number 2}]
-    (+ (reduce (fn [sum [k _]] (+ sum (k scores))) 0 (partition 2 address-parts))
-       ;; Bonus points based on remaining words
-       (let [clean (-> remaining-string
-                       (str/replace "," "")
-                       (str/replace re-spaces " ")
-                       str/trim)
-             words-left (count (str/split clean #" "))]
-         (- 4 words-left)))))
+                :house-number 2}
+        raw-score (reduce (fn [sum [k _]] (+ sum (k scores))) 0 (partition 2 address-parts))]
+    (if (pos? raw-score)
+      (+ raw-score
+         ;; Bonus points based on remaining words
+         (let [clean (-> remaining-string
+                         (str/replace "," "")
+                         (str/replace re-spaces " ")
+                         str/trim)
+               words-left (count (str/split clean #" "))]
+           (- 4 words-left)))
+      raw-score)))
 
 (defn address-value
   "Compute the address value of string"
