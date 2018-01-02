@@ -120,8 +120,10 @@
                               data-pc-locs)
           data-locs (filter :header-loc data-h-pc-locs)
           data-places (map (partial update-with-tag :place :header-loc loc->place) data-locs)
-          data-places-addrs (map (partial update-with-tag
-                                          :address :postal-code-loc loc->address) data-places)]
+          data-places-addrs (mapcat (partial update-with-tag-seq
+                                             :address :postal-code-loc
+                                             loc->addresses)
+                                    data-places)]
 
       ;; Check that remove-tags has some effect
       (is (= #{:script :iframe :footer :head :link :noscript :img}
@@ -140,6 +142,34 @@
 
       (is (= 6 (count (filter :place data-places))))
 
-      ;; This test case is failing now
       (is (= 6 (count (filter (comp (partial re-find re-postal-code) :address)
                               data-places-addrs)))))))
+
+(deftest test-reader-best-burgers
+  (testing "best-burgers"
+    (let [hickory (->> (slurp "test/playout/reader/fixtures/best-burgers")
+                       parse
+                       as-hickory)
+
+          tags-removed (remove-tags uninteresting-tags hickory)
+
+          response (process hickory)]
+
+      ;; Check that remove-tags has some effect
+      (is (= #{:script :iframe :ins :footer :header :title :style :head
+               :link :noscript :base :nav :img}
+             (clojure.set/difference (get-all-tags hickory)
+                                     (get-all-tags tags-removed))))
+
+      (is (= (count response) 24))
+
+      ;; All the latlngs after processing were geocoded
+      (is (= (count (filter (comp nil? :latlng) response)) 0))
+
+      ;; All headers were parsed
+      ;;   (Ensures no missing headers)
+      (is (= (sort (->> response
+                        (map :place)
+                        (map get-index)
+                        (filter identity)))
+             '(1 1 2 3 4 5 6 7 8 8 8 8 9 10 11 12 12 12 13 13 13 13 14 15))))))

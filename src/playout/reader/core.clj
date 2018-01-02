@@ -76,7 +76,7 @@
     <blah... We don't want too many of these here./>
     <blah.address-cap+1 />
   </blah>"
-  16)
+  20)
 
 (defn address-label-like
   [hzip-loc]
@@ -125,14 +125,18 @@
                           (some second useful)))
                   :else (list n false))) node)))
 
-(defn loc->address
+(defn loc->addresses
   [loc]
-  (->> loc
-       tagger/loc->buckets
-       tagger/buckets->addresses
-       (sort-by second)
-       last
-       first))
+  (let [addresses (->> loc
+                       tagger/loc->buckets
+                       tagger/buckets->addresses)]
+    (if (seq addresses)
+      ;; If addresses is not empty
+      (let [max-address-value (second (apply max-key second addresses))]
+        (->> addresses
+             (filter #(= max-address-value (second %)))
+             (map first)))
+      addresses)))
 
 (def uninteresting-tags [:ins :script :noscript :img :iframe :head :link :footer :header])
 
@@ -157,10 +161,25 @@
   (assoc datum tag info))
 
 (defn update-with-tag
-  [new-tag old-tag f datum]
-  (let [old-info (old-tag datum)
+  "Given an old tag in a map m, 
+     get the value for the old tag in m, 
+     apply f on it,
+     associate the new value back into m with key new-tag."
+  [new-tag old-tag f m]
+  (let [old-info (old-tag m)
         new-info (f old-info)]
-    (assoc datum new-tag new-info)))
+    (assoc m new-tag new-info)))
+
+(defn update-with-tag-seq
+  "Given an old tag in a map m, 
+     get the value for the old tag in m, 
+     apply f on it, (f returns a seq)
+     clone m and
+     associate the new value back into m's clones with key new-tag."
+  [new-tag old-tag f m]
+  (let [old-info (old-tag m)
+        new-info (f old-info)]
+    (map (partial assoc m new-tag) new-info)))
 
 (defn loc->place
   [loc]
@@ -184,7 +203,7 @@
        ;; Uncomment the following two for debugging
        ;; (map (partial update-with-tag :buckets :postal-code-loc tagger/loc->buckets))
        ;; (map (partial update-with-tag :addresses :buckets tagger/buckets->addresses))
-       (map (partial update-with-tag :address :postal-code-loc loc->address))
+       (mapcat (partial update-with-tag-seq :address :postal-code-loc loc->addresses))
        ;; Some postal-code-locs are misidentified, hence addresses cannot be found
        (filter :address)))
 
@@ -267,7 +286,7 @@
   (let [raw-result (->> hickory
                         hickory->data
                         (distinct-by (fn [d] [(:place d) (:address d)]))
-                        (pmap (partial update-with-tag :latlng :address geocode)))
+                        (map (partial update-with-tag :latlng :address geocode)))
         result (publish raw-result)]
     (pprint (->> raw-result
                  (map (partial simplify-datum))
