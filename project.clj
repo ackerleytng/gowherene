@@ -16,7 +16,9 @@
                  [hickory "0.7.1"]
                  ;; For client-side
                  [org.clojure/clojurescript "1.9.946"]
-                 [reagent "0.8.0-alpha2"]]
+                 [reagent "0.8.0-alpha2"]
+                 [cljsjs/google-maps "3.18-1"]
+                 [cljs-ajax "0.7.3"]]
   :plugins [[lein-ring "0.9.7"]
             [lein-figwheel "0.5.14"]]
   :ring {:handler playout.handler/app}
