@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [clojure.pprint :refer [pprint]]
             [hickory.core :refer [as-hickory parse]]
+            [medley.core :refer [take-upto distinct-by]]
             [playout.reader.core :refer :all]))
 
 (deftest test-reader-cheap-food-orchard
@@ -153,18 +154,30 @@
 
           tags-removed (remove-tags uninteresting-tags hickory)
 
+          raw-result-before-geocoding (->> hickory
+                                           hickory->data
+                                           (distinct-by (fn [d] [(:place d) (:address d)])))
+
           response (process hickory)]
 
-      ;; Check that remove-tags has some effect
-      (is (= #{:script :iframe :ins :footer :header :title :style :head
-               :link :noscript :base :nav :img}
-             (clojure.set/difference (get-all-tags hickory)
-                                     (get-all-tags tags-removed))))
+      (testing "remove-tags has some effect"
+        (is (= #{:script :iframe :ins :footer :header :title :style :head
+                 :link :noscript :base :nav :img}
+               (clojure.set/difference (get-all-tags hickory)
+                                       (get-all-tags tags-removed)))))
 
       (is (= (count response) 24))
 
       ;; All the latlngs after processing were geocoded
       (is (= (count (filter (comp nil? :latlng) response)) 0))
+
+      ;; All headers were parsed in raw result
+      ;;   (Ensures no missing headers)
+      (is (= (sort (->> raw-result-before-geocoding
+                        (map :place)
+                        (map get-index)
+                        (filter identity)))
+             '(1 1 2 3 4 5 6 7 8 8 8 8 9 10 11 12 12 12 13 13 13 13 14 15)))
 
       ;; All headers were parsed
       ;;   (Ensures no missing headers)
