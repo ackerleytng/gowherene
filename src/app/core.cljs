@@ -1,6 +1,7 @@
 (ns app.core
   (:require [reagent.core :as r]
-            [ajax.core :refer [GET]]))
+            [ajax.core :refer [GET]]
+            [clojure.string :as str]))
 
 (def singapore-bounds
   (reduce #(.extend %1 (apply (fn [x y] (js/google.maps.LatLng. x y)) %2))
@@ -24,11 +25,13 @@
   (r/create-class {:reagent-render recommendation-map-render
                    :component-did-mount recommendation-map-did-mount}))
 
-(defn plot-url [url]
-  (println url))
+(defn plot-url [url add-to-current-plot]
+  (.log js/console (clj->js [url add-to-current-plot])))
 
 (defn controls []
-  (let [url (r/atom "Enter your url here (from sethlui, smartlocal...)")]
+  (let [url-placeholder "Enter your url here (from sethlui, smartlocal...)"
+        url (r/atom url-placeholder)
+        add-to-current-plot (r/atom false)]
     (fn []
       [:div#controls
        [:div.field.has-addons
@@ -36,14 +39,18 @@
          [:input#url.input {:type "text"
                             :value @url
                             :on-key-press #(when (= "Enter" (.-key %))
-                                             (plot-url @url))
+                                             (plot-url @url @add-to-current-plot))
+                            :on-focus #(when (= @url url-placeholder) (reset! url ""))
+                            :on-blur #(when (str/blank? @url) (reset! url url-placeholder))
                             :on-change #(reset! url (.. % -target -value))}]]
         [:div.control
-         [:a#plot.button.is-info {:on-click #(plot-url @url)} "Plot!"]]]
+         [:a#plot.button.is-info {:on-click #(plot-url @url @add-to-current-plot)} "Plot!"]]]
        [:div.field.is-grouped.is-grouped-centered
         [:div.control
          [:label.checkbox
-          [:input {:type "checkbox"}]
+          [:input {:type "checkbox"
+                   :checked @add-to-current-plot
+                   :on-change #(swap! add-to-current-plot not)}]
           " Add to current plot"]]]])))
 
 (defn app []
