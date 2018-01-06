@@ -15,7 +15,8 @@
                  [slingshot "0.12.2"]
                  [hickory "0.7.1"]
                  ;; For client-side
-                 [org.clojure/clojurescript "1.9.946"]]
+                 [org.clojure/clojurescript "1.9.946"]
+                 [reagent "0.8.0-alpha2"]]
   :plugins [[lein-ring "0.9.7"]
             [lein-figwheel "0.5.14"]]
   :ring {:handler playout.handler/app}
