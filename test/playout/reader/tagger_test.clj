@@ -313,8 +313,6 @@
                 22]
                ["Singapore 018972 +65 6688 7728 Sun to Thu: 10:30-23:00 Fri to Sat: 10:30-23:30"
                 13]
-               ["2 Bayfront Avenue #B2-66/67/68 Singapore 018972 +65 6688 7728 Sun to Thu: 10:30-23:00 Fri to Sat: 10:30-23:30"
-                18]
                ["2 Orchard Turn" 10]
                ["#01-21 and #02-11" 11]
                ["Singapore 238801" 13]
@@ -328,8 +326,6 @@
                 26]
                ["#01-21 and #02-11 Singapore 238801 +65 6884 4880 Open Daily: 10am- 10pm"
                 17]
-               ["2 Orchard Turn #01-21 and #02-11 Singapore 238801 +65 6884 4880 Open Daily: 10am- 10pm"
-                22]
                ["Unit 026-078 Terminal 2" 12]
                ["Singapore 819643" 13]
                ["Departure/Transit Lounge South Unit 026-078 Terminal 2" 16]
@@ -342,8 +338,6 @@
                 23]
                ["Unit 026-078 Terminal 2 Singapore 819643 +65 6543 2443 Open Daily: 6:00am – 1:00am"
                 14]
-               ["Departure/Transit Lounge South Unit 026-078 Terminal 2 Singapore 819643 +65 6543 2443 Open Daily: 6:00am – 1:00am"
-                18]
                ["Unit 02-18 Terminal 3" 12]
                ["Singapore 819663" 13]
                ["Departure/Transit Lounge South Unit 02-18 Terminal 3" 16]
@@ -355,9 +349,7 @@
                ["Departure/Transit Lounge South Unit 02-18 Terminal 3 Singapore 819663 +65 6441 0018"
                 23]
                ["Unit 02-18 Terminal 3 Singapore 819663 +65 6441 0018 Open Daily: 6:00am – 1:00am"
-                14]
-               ["Departure/Transit Lounge South Unit 02-18 Terminal 3 Singapore 819663 +65 6441 0018 Open Daily: 6:00am – 1:00am"
-                18])
+                14])
              (buckets->addresses buckets))))))
 
 (deftest test-bucket-loc-level-liu-sha-bao

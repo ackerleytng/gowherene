@@ -1,35 +1,36 @@
 (ns playout.reader.tagger
   (:require [hickory.core :refer [parse parse-fragment as-hickory]]
             [hickory.zip :refer [hickory-zip]]
+            [medley.core :refer [map-vals]]
             [clojure.zip :as zip]
-            [clojure.set :as set]
             [clojure.string :as str]))
 
-#_("
-We make the assumption here that people will use the same
-  html tags, classes and attributes for a single address.
+;;;; General Algorithm
 
-We also make the assumption that we have already \"zoomed in\" to tags surrounding an address.
-The loc provided to loc->buckets should already be quite close to 
-  where the address is suspected to be.
+;;; We make the assumption here that people will use the same
+;;;   html tags, classes and attributes for a single address.
+;;; 
+;;; We also make the assumption that we have already "zoomed in" to tags surrounding an address.
+;;; The loc provided to loc->buckets should already be quite close to 
+;;;   where the address is suspected to be.
+;;; 
+;;; 1. Get content of tags
+;;; 2. For each content, get the path (see loc->path)
+;;; 3. Bucket the content according to path
+;;; 4. Add content to bucket only if it increases the address value
+;;; 5. Address value is determined by existence of keywords in the string
+;;;    + Postal code.
+;;;    + Keywords like "Road" "Jalan"
+;;;    + Numbers with # in it
+;;;    + Numbers prior to road
+;;; 6. Our address has 4 "slots"
+;;;    + Unit Number
+;;;    + House Number
+;;;    + Road Name
+;;;    + Postal Code
+;;; If the slot has been 'taken', the address value does not increase anymore.
+;;; (Hence it is not added to the bucket)
 
-1. Get content of tags
-2. For each content, get the path (see loc->path)
-3. Bucket the content according to path
-4. Add content to bucket only if it increases the address value
-5. Address value is determined by existence of keywords in the string
-   + Postal code.
-   + Keywords like \"Road\" \"Jalan\"
-   + Numbers with # in it
-   + Numbers prior to road
-6. Our address has 4 \"slots\"
-   + Unit Number
-   + House Number
-   + Road Name
-   + Postal Code
-If the slot has been 'taken', the address value does not increase anymore.
-(Hence it is not added to the bucket)
-")
 
 ;; Functions to find parts of an address
 
@@ -61,52 +62,81 @@ If the slot has been 'taken', the address value does not increase anymore.
   [s]
   (re-find re-unit-number s))
 
-(defn find-road-name
-  "Finds road name patterns with hints from https://www.wikiwand.com/en/Road_names_in_Singapore"
-  [s]
-  (let [malay-prefix-patterns (map #(re-pattern
-                                     ;; Maximum of 3 words after the prefix
-                                     ;; except for the word the
-                                     (str "(?i)\\b" %
-                                          "\\b(?: \\b(?!the\\b)(?:[a-z']+\\b|\\d+)\\b){1,3}"))
-                                   ["bukit" "bt" "jalan" "jln"
-                                    "kampong" "kg" "lengkok"
-                                    "lorong" "lor"
-                                    "padang" "taman"
-                                    "tanjong" "tg"])
-        english-suffix-patterns (map #(re-pattern
-                                       ;; maximum of 3 words before the suffix
-                                       ;; except for the word the
-                                       (str "(?i)(?:\\b(?!the\\b)[a-z']+\\b ){1,3}\\b" %
-                                            "\\b(?: \\b\\d{1,3}\\b)?"))
-                                     ["alley" "avenue" "ave" "bank" "boulevard" "blvd"
-                                      "bow" "central" "circle" "circuit" "circus" "close" "cl"
-                                      "concourse" "court" "crescent" "cres" "cross" "crossing"
-                                      "drive" "dr" "east" "estate" "expressway" "e'way"
-                                      "farmway" "field" "garden" "gardens" "gate" "gateway"
-                                      "grande" "green" "grove" "height" "heights"
-                                      "highway" "hway" "hill" "island" "junction" "lane" "link"
-                                      "loop" "mall" "mount" "mt" "north" "park" "parkway" "path"
-                                      "place" "pl" "plain" "plains" "plaza" "promenade" "quay"
-                                      "ridge" "ring" "rise" "road" "rd" "sector" "south"
-                                      "square" "sq" "street" "st" "terrace" "track" "turn"
-                                      "vale" "valley" "view" "vista" "walk" "way" "west" "wood"])
-        names-with-the ["the inglewood" "the knolls" "the oval"]
+(def malay-prefix-patterns
+  (map #(re-pattern
+         ;; Maximum of 3 words after the prefix
+         ;; except for the word the
+         (str "(?i)\\b" %
+              "\\b(?: \\b(?!the\\b)(?:[a-z']+\\b|\\d+)\\b){1,3}"))
+       ["bukit" "bt" "jalan" "jln"
+        "kampong" "kg" "lengkok"
+        "lorong" "lor"
+        "padang" "taman"
+        "tanjong" "tg"]))
+
+(def english-suffix-patterns 
+  (map #(re-pattern
+         ;; maximum of 3 words before the suffix
+         ;; except for the word the
+         (str "(?i)(?:\\b(?!the\\b)[a-z']+\\b ){1,3}\\b" %
+              "\\b(?: \\b\\d{1,3}\\b)?"))
+       ;; Since words like Gardens could appear as area information in addresses 
+       ;;   next to road names, such as Some Road in Serangoon Gardens,
+       ;;   we should place suffixes with higher probabilities 
+       ;;   of being real road names ahead.
+       ;; This list is ordered by gut feel, in the absence of further data exploration
+       ["road" "rd"
+        "street" "st"
+        "avenue" "ave"
+        "way"
+        "boulevard" "blvd"
+        "close" "cl"
+        "crescent" "cres"
+        "drive" "dr"
+        "place" "pl" 
+        "alley" "bank"
+        "bow" "central" "circle" "circuit" "circus"
+        "concourse" "court" "cross" "crossing"
+        "east" "estate" "expressway" "e'way"
+        "farmway" "field" "garden" "gardens" "gate" "gateway"
+        "grande" "green" "grove" "height" "heights"
+        "highway" "hway" "hill" "island" "junction" "lane" "link"
+        "loop" "mall" "mount" "mt" "north" "park" "parkway" "path"
+        "plain" "plains" "plaza" "promenade" "quay"
+        "ridge" "ring" "rise" "sector" "south"
+        "square" "sq" "terrace" "track" "turn"
+        "vale" "valley" "view" "vista" "walk" "west" "wood"]))
+
+(def exact-matches
+  (let [names-with-the ["the inglewood" "the knolls" "the oval"]
         single-word-names ["bishopsgate" "bishopswalk" "causeway" "piccadilly" "queensway"]
         without-generic-element ["geylang bahru" "geylang serai"
                                  "kallang bahru" "kallang tengah"
                                  "lengkong dua" "lengkong empat"
                                  "lengkong enam" "lengkong lima"
                                  "lengkong satu" "lengkong tiga"
-                                 "lengkong tujoh" "wholesale centre"]
-        exact-matches (map #(re-pattern (str "(?i)\\b" % "\\b"))
-                           (set/union (set names-with-the)
-                                      (set single-word-names)
-                                      (set without-generic-element)))
-        patterns (set/union (set malay-prefix-patterns)
-                            (set english-suffix-patterns)
-                            (set exact-matches))]
-    (some identity (map #(re-find % s) patterns))))
+                                 "lengkong tujoh" "wholesale centre"]]
+    (map #(re-pattern (str "(?i)\\b" % "\\b"))
+         (concat names-with-the
+                 single-word-names
+                 without-generic-element))))
+
+(def road-name-patterns
+  ;; In decreasing order of commonness
+  ;; If I see some english suffix, it is likely to be the road name
+  ;;   if there are no english suffixes, then the presence of a malay prefix,
+  ;;   and so on.
+  ;; These help in cases like Some Road, Geylang Serai
+  ;;   "Some Road" is the road name we're looking for, 
+  ;;   and the other terms are more likely to be information about the area
+  (concat english-suffix-patterns
+          malay-prefix-patterns
+          exact-matches))
+
+(defn find-road-name
+  "Finds road name patterns with hints from https://www.wikiwand.com/en/Road_names_in_Singapore"
+  [s]
+  (some #(re-find % s) road-name-patterns))
 
 ;; Functions to manipulate locs
 
@@ -137,33 +167,34 @@ If the slot has been 'taken', the address value does not increase anymore.
 
 (defn loc->path
   [loc]
-  (let [path-length 5]
-    (->> loc
-         zip/path
-         reverse
-         (take path-length)
-         reverse
-         ;; Keep only the attrs and tag information
-         (map (fn [{:keys [tag attrs]}] {:tag tag :attrs attrs})))))
+  (let [path-length 5
+        path-with-full-details (->> loc
+                                    zip/path
+                                    reverse
+                                    (take path-length)
+                                    reverse)]
+    (map #(select-keys % [:tag :attrs]) path-with-full-details)))
+
+(def tagging-functions
+  [[:postal-code find-postal-code]
+   [:unit-number find-unit-number]
+   [:road-name find-road-name]
+   [:house-number find-house-number]])
 
 (defn tag-string
   "Tag a string with parts of an address.
      Returns [a vector of labelled pairs, the remaining parts of the string, trimmed]"
   [string]
-  (let [fns [:postal-code find-postal-code
-             :unit-number find-unit-number
-             :road-name find-road-name
-             :house-number find-house-number]]
-    (reduce (fn [[v s] [k f]]
-              (if-let [match (f s)]
-                [;; Add match to vector
-                 (conj v k match)
-                 ;; Wipe out whatever was already used
-                 (str/trim (str/replace-first s match ""))]
-                ;; If it couldn't be found, do nothing
-                [v s]))
-            [[] string]
-            (partition 2 fns))))
+  (reduce (fn [[v s] [k f]]
+            (if-let [match (f s)]
+              [;; Add match to vector
+               (conj v k match)
+               ;; Wipe out whatever was already used
+               (str/trim (str/replace-first s match ""))]
+              ;; If it couldn't be found, do nothing
+              [v s]))
+          [[] string]
+          tagging-functions))
 
 (def re-spaces
   "Regex to be used to replace all &nbsp;s as well as spaces"
@@ -178,14 +209,18 @@ If the slot has been 'taken', the address value does not increase anymore.
       (str/split #" ")
       count))
 
+(def address-parts-scores
+  {:postal-code 10
+   :unit-number 8
+   :road-name 5
+   :house-number 2})
+
 (defn assign-points
   "Given [address parts, remaining parts of the string], assign points to this tagging"
   [[address-parts remaining-string]]
-  (let [scores {:postal-code 10
-                :unit-number 8
-                :road-name 5
-                :house-number 2}
-        raw-score (reduce (fn [sum [k _]] (+ sum (k scores))) 0 (partition 2 address-parts))]
+  (let [raw-score (reduce (fn [sum [k _]] (+ sum (k address-parts-scores))) 
+                          0
+                          (partition 2 address-parts))]
     (if (pos? raw-score)
       (+ raw-score
          ;; Bonus points based on remaining words
@@ -206,17 +241,14 @@ If the slot has been 'taken', the address value does not increase anymore.
   [loc]
   (->> (walk-locs loc)
        ;; Retain only string nodes
-       (map (fn [l] [l (zip/node l)]))
-       (filter (comp string? second))
-       ;; Compute the bucket keys with loc->path
-       (map (fn [[l string]] [(loc->path l) string]))
-       ;; Do the bucketing
-       (reduce (fn [m [path s]] (merge-with into m {path [s]})) {})))
+       (filter (comp string? zip/node))
+       (group-by loc->path)
+       (map-vals (partial map zip/node))))
 
 (defn all-partitions
   "Given a vector, return all possible partitions
      For example [:a :b :c] becomes ((:a) (:b) (:c) (:a :b) (:b :c) (:a :b :c))"
-  ([v] (all-partitions v (inc (count v))))
+  ([v] (all-partitions (inc (count v)) v))
   ([max-partition-size v]
    (mapcat #(partition % 1 v) (range 1 max-partition-size))))
 
