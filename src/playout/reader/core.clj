@@ -50,17 +50,16 @@
              (recur (zip/next loc) (conj tags tag))))))
 
 (defn remove-tags
-  "Given a hickory, return a hickory without the tags in to-remove"
+  "Given a hickory, return a hickory without the tags in the set to-remove"
   [to-remove hickory]
-  ((fn [loc]
-     (if (zip/end? loc)
-       ;; zip/root returns just the node, not a full zipper
-       (zip/root loc)
-       (recur (zip/next (if (some #(= (:tag (zip/node loc)) %)
-                                  to-remove)
-                          (zip/remove loc)
-                          loc)))))
-   (hickory-zip hickory)))
+  (loop [loc (hickory-zip hickory)]
+    (if (zip/end? loc)
+      ;; zip/root returns just the node, not a full zipper
+      (zip/root loc)
+      (recur (zip/next 
+              (if (to-remove (:tag (zip/node loc)))
+                (zip/remove loc)
+                loc))))))
 
 (def address-cap
   "We use (s/has-child (s/has-child (s/find-in-text re-address)))
@@ -138,7 +137,7 @@
              (map first)))
       addresses)))
 
-(def uninteresting-tags [:ins :script :noscript :img :iframe :head :link :footer :header])
+(def uninteresting-tags #{:ins :script :noscript :img :iframe :head :link :footer :header})
 
 (defn update-if-exists
   [map key f]
@@ -286,7 +285,7 @@
   (let [raw-result (->> hickory
                         hickory->data
                         (distinct-by (fn [d] [(:place d) (:address d)]))
-                        (map (partial update-with-tag :latlng :address geocode)))
+                        (pmap (partial update-with-tag :latlng :address geocode)))
         result (publish raw-result)]
     (pprint (->> raw-result
                  (map (partial simplify-datum))
