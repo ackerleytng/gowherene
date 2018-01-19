@@ -1,57 +1,175 @@
 (ns app.core
   (:require [reagent.core :as r]
+            [reagent.dom.server :as rs]
             [ajax.core :refer [GET]]
             [clojure.string :as str]))
 
+(enable-console-print!)
+
+(def url-placeholder "Enter your url here (from sethlui, smartlocal...)")
+
+(def app-state (r/atom {:add-to-plot false
+                        :url url-placeholder
+                        :data []}))
+
+(defn gmap-latlng
+  [{:keys [lat lng]}]
+  (js/google.maps.LatLng. lat lng))
+
+(defn gmap-latlng-bounds [latlngs]
+  (when (seq latlngs)
+    (reduce #(.extend %1 %2)
+            (js/google.maps.LatLngBounds.)
+            latlngs)))
+
 (def singapore-bounds
-  (reduce #(.extend %1 (apply (fn [x y] (js/google.maps.LatLng. x y)) %2))
-          (js/google.maps.LatLngBounds.)
-          [[1.365035 103.644231]
-           [1.355701 104.036779]
-           [1.471183 103.810720]
-           [1.236344 103.832829]]))
+  (gmap-latlng-bounds (map gmap-latlng [{:lat 1.365035 :lng 103.644231}
+                                        {:lat 1.355701 :lng 104.036779}
+                                        {:lat 1.471183 :lng 103.810720}
+                                        {:lat 1.236344 :lng 103.832829}])))
 
-(defn recommendation-map-render []
-  [:div {:style {:height "100vh"}}])
+(defn compute-and-fit-bounds
+  [map-object data]
+  (let [new-bounds (->> data
+                        (map :latlng)
+                        (map gmap-latlng)
+                        gmap-latlng-bounds)]
+    (.fitBounds map-object (or new-bounds singapore-bounds) 0)))
 
-(defn recommendation-map-did-mount [this]
-  (let [map-canvas (r/dom-node this)
-        map-options (clj->js {:disableDefaultUI true
-                              :zoomControl true})]
-    (-> (js/google.maps.Map. map-canvas map-options)
-        (.fitBounds singapore-bounds 0))))
+(defn infowindow-content
+  [header content]
+  [:div
+   [:b header] [:br]
+   content])
+
+(defn gmap-info-window
+  [header content]
+  (js/google.maps.InfoWindow.
+   (clj->js {:content (rs/render-to-static-markup [infowindow-content header content])})))
+
+(defn gmap-marker
+  [map-object latlng label title content]
+  (let [marker (js/google.maps.Marker.
+                (clj->js {:position latlng
+                          :map map-object
+                          :title title
+                          :label label}))]
+    (.addListener marker
+                  "click"
+                  (fn [] (.open (gmap-info-window title content)
+                                map-object
+                                marker)))
+    marker))
+
+(defn gmap-marker-remove
+  [marker]
+  (.log js/console (clj->js [:removing-marker marker]))
+  (.setMap marker nil))
+
+(defn do-build-marker
+  [map-object {:keys [place address latlng]}]
+  (.log js/console (clj->js [:do-build-marker place]))
+  (when place
+    (let [label (get (re-find #"^\s*(\d+)" place) 1)]
+      (.log js/console (clj->js [:label label]))
+      (gmap-marker map-object (gmap-latlng latlng) label place address))))
+
+(defn do-plot
+  [map-object markers-atom data]
+  (let [markers (map (partial do-build-marker map-object) data)]
+    ;; Removing this console.log will prevent markers from being plotted at all
+    ;;   Compiler overoptimization?
+    (.log js/console (clj->js [:do-plot-data data markers]))
+    (map gmap-marker-remove @markers-atom)
+    (reset! markers-atom markers)))
 
 (defn recommendation-map []
-  (r/create-class {:reagent-render recommendation-map-render
-                   :component-did-mount recommendation-map-did-mount}))
+  (let [map-atom (r/atom nil)
+        markers (r/atom [])]
+    (r/create-class
+     {:display-name "recommendation-map"
+      :component-did-mount
+      (fn [this]
+        (let [map-canvas (r/dom-node this)
+              map-options (clj->js {:disableDefaultUI true
+                                    :zoomControl true})
+              map-object (js/google.maps.Map. map-canvas map-options)
+              data (-> this r/props :data)]
+          (reset! map-atom map-object)
+          (compute-and-fit-bounds map-object data)))
+      :component-did-update
+      (fn [this]
+        (let [data (-> this r/props :data)]
+          (do-plot @map-atom markers data)
+          (compute-and-fit-bounds @map-atom data)))
+      :reagent-render
+      (fn []
+        [:div {:style {:height "100vh"}}])})))
 
-(defn plot-url [url add-to-current-plot]
-  (.log js/console (clj->js [url add-to-current-plot])))
+(defn handle-data
+  [response]
+  (.log js/console (clj->js [:response response]))
+  (if (@app-state :add-to-plot)
+    (swap! app-state update :data conj response)
+    (swap! app-state assoc :data response)))
+
+(defn parse-url-error [response]
+  (.log js/console [:error-response response]))
+
+(defn parse-url
+  [{:keys [url add-to-plot]}]
+  (.log js/console (clj->js [:url url
+                             :add-to-plot add-to-plot]))
+  (GET "/parse" {:params {:url url}
+                 :handler handle-data
+                 :error-handler parse-url-error
+                 :response-format :json
+                 :keywords? true}))
+
+;; ------------------------
+;; Controls components
+
+(defn url-input-handle-key-press [e]
+  (when (= "Enter" (.-key e))
+    (parse-url @app-state)))
+
+(defn url-input-handle-focus [e]
+  (when (= (@app-state :url) url-placeholder)
+    (swap! app-state assoc :url "")))
+
+(defn url-input-handle-blur [e]
+  (when (str/blank? (@app-state :url))
+    (swap! app-state assoc :url url-placeholder)))
+
+(defn url-input-handle-change [e]
+  (swap! app-state assoc :url (.. e -target -value)))
+
+(defn url-input []
+  [:input#url.input
+   {:type "text"
+    :value (@app-state :url)
+    :on-key-press url-input-handle-key-press
+    :on-focus url-input-handle-focus
+    :on-blur url-input-handle-blur
+    :on-change url-input-handle-change}])
 
 (defn controls []
-  (let [url-placeholder "Enter your url here (from sethlui, smartlocal...)"
-        url (r/atom url-placeholder)
-        add-to-current-plot (r/atom false)]
-    (fn []
-      [:div#controls
-       [:div.field.has-addons
-        [:div.control.is-expanded
-         [:input#url.input {:type "text"
-                            :value @url
-                            :on-key-press #(when (= "Enter" (.-key %))
-                                             (plot-url @url @add-to-current-plot))
-                            :on-focus #(when (= @url url-placeholder) (reset! url ""))
-                            :on-blur #(when (str/blank? @url) (reset! url url-placeholder))
-                            :on-change #(reset! url (.. % -target -value))}]]
-        [:div.control
-         [:a#plot.button.is-info {:on-click #(plot-url @url @add-to-current-plot)} "Plot!"]]]
-       [:div.field.is-grouped.is-grouped-centered
-        [:div.control
-         [:label.checkbox
-          [:input {:type "checkbox"
-                   :checked @add-to-current-plot
-                   :on-change #(swap! add-to-current-plot not)}]
-          " Add to current plot"]]]])))
+  [:div#controls
+   [:div.field.has-addons
+    [:div.control.is-expanded
+     [url-input]]
+    [:div.control
+     [:a#plot.button.is-info {:on-click #(parse-url @app-state)} "Plot!"]]]
+   [:div.field.is-grouped.is-grouped-centered
+    [:div.control
+     [:label.checkbox
+      [:input {:type "checkbox"
+               :checked (@app-state :add-to-plot)
+               :on-change #(swap! app-state update :add-to-plot not)}]
+      " Add to current plot"]]]])
+
+;; ------------------------
+;; Main app
 
 (defn app []
   [:div
@@ -60,11 +178,13 @@
      [:h1.title "Mappout your recommendations!"]
      [controls]]]
    [:div.container.is-widescreen
-    [recommendation-map]]])
+    [recommendation-map @app-state]]])
+
+(defn by-id [id]
+  (.getElementById js/document id))
 
 (defn ^:export run []
   (r/render [app]
-            (.getElementById js/document "app"))
-  (enable-console-print!))
+            (by-id "app")))
 
 (run)
