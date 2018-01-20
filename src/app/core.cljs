@@ -10,6 +10,7 @@
 
 (def app-state (r/atom {:add-to-plot false
                         :loading false
+                        :error-message nil
                         :url url-placeholder
                         :data []}))
 
@@ -150,13 +151,16 @@
   [response]
   (.log js/console (clj->js [:response response]))
   (swap! app-state assoc :loading false)
-  (if (@app-state :add-to-plot)
-    (swap! app-state update :data into response)
-    (swap! app-state assoc :data response)))
+  (if (zero? (count response))
+    (swap! app-state assoc :error-message "Couldn't find any addresses! :(")
+    (if (@app-state :add-to-plot)
+      (swap! app-state update :data into response)
+      (swap! app-state assoc :data response))))
 
 (defn parse-url-error [response]
-  (.log js/console [:error-response response])
-  (swap! app-state assoc :loading false))
+  (.log js/console (clj->js [:error-response response]))
+  (swap! app-state assoc :loading false)
+  (swap! app-state assoc :error-message "Couldn't read your URL :("))
 
 (defn parse-url
   [{:keys [url add-to-plot]}]
@@ -217,10 +221,28 @@
       " Add to current plot"]]]])
 
 ;; ------------------------
+;; Error modal
+
+(defn clear-error []
+  (swap! app-state assoc :error-message nil))
+
+(defn error-modal []
+  [:div#error
+   {:class ["modal" (when (@app-state :error-message) "is-active")]}
+   [:div.modal-background
+    {:on-click clear-error}]
+   [:div.modal-content
+    [:div.card
+     [:div.card-content (@app-state :error-message)]]]
+   [:button.modal-close.is-large {:aria-label "close"
+                                  :on-click clear-error}]])
+
+;; ------------------------
 ;; Main app
 
 (defn app []
   [:div
+   [error-modal]
    [:section.section
     [:div.container.is-fluid
      [:h1.title "Mappout your recommendations!"]
