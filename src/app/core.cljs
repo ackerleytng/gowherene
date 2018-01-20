@@ -63,24 +63,22 @@
 
 (defn gmap-marker-remove
   [marker]
-  (.log js/console (clj->js [:removing-marker marker]))
   (.setMap marker nil))
 
 (defn do-build-marker
   [map-object {:keys [place address latlng]}]
-  (.log js/console (clj->js [:do-build-marker place]))
   (when place
     (let [label (get (re-find #"^\s*(\d+)" place) 1)]
-      (.log js/console (clj->js [:label label]))
       (gmap-marker map-object (gmap-latlng latlng) label place address))))
 
-(defn do-plot
+(defn do-plot!
   [map-object markers-atom data]
-  (let [markers (map (partial do-build-marker map-object) data)]
-    ;; Removing this console.log will prevent markers from being plotted at all
-    ;;   Compiler overoptimization?
-    (.log js/console (clj->js [:do-plot-data data markers]))
-    (map gmap-marker-remove @markers-atom)
+  ;; Need to use mapv because map is lazy
+  (let [markers (mapv (partial do-build-marker map-object) data)]
+    ;; Need to use doseq because map is lazy
+    (doseq [m @markers-atom]
+      (gmap-marker-remove m))
+    ;; Not sure why the use of markers here does not force execution above
     (reset! markers-atom markers)))
 
 (defn recommendation-map []
@@ -100,7 +98,7 @@
       :component-did-update
       (fn [this]
         (let [data (-> this r/props :data)]
-          (do-plot @map-atom markers data)
+          (do-plot! @map-atom markers data)
           (compute-and-fit-bounds @map-atom data)))
       :reagent-render
       (fn []
