@@ -31,5 +31,4 @@
                                    :output-dir "resources/public/js/out"}}]}
   :profiles  {:uberjar {:aot :all}
               :dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                                   [ring/ring-mock "0.3.0"]]}
-              })
+                                   [ring/ring-mock "0.3.0"]]}})

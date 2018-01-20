@@ -178,7 +178,8 @@
      [:h1.title "Mappout your recommendations!"]
      [controls]]]
    [:div.container.is-widescreen
-    [recommendation-map @app-state]]])
+    ;; props passed to a reagent component must be a map
+    [recommendation-map {:data (@app-state :data)}]]])
 
 (defn by-id [id]
   (.getElementById js/document id))
