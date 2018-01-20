@@ -9,6 +9,7 @@
 (def url-placeholder "Enter your url here (from sethlui, smartlocal...)")
 
 (def app-state (r/atom {:add-to-plot false
+                        :loading false
                         :url url-placeholder
                         :data []}))
 
@@ -107,17 +108,20 @@
 (defn handle-data
   [response]
   (.log js/console (clj->js [:response response]))
+  (swap! app-state assoc :loading false)
   (if (@app-state :add-to-plot)
     (swap! app-state update :data into response)
     (swap! app-state assoc :data response)))
 
 (defn parse-url-error [response]
-  (.log js/console [:error-response response]))
+  (.log js/console [:error-response response])
+  (swap! app-state assoc :loading false))
 
 (defn parse-url
   [{:keys [url add-to-plot]}]
   (.log js/console (clj->js [:url url
                              :add-to-plot add-to-plot]))
+  (swap! app-state assoc :loading true)
   (GET "/parse" {:params {:url url}
                  :handler handle-data
                  :error-handler parse-url-error
@@ -151,13 +155,18 @@
     :on-blur url-input-handle-blur
     :on-change url-input-handle-change}])
 
+(defn plot-button []
+  [:a#plot
+   {:class ["button" "is-info" (when (@app-state :loading) "is-loading")]
+    :on-click #(parse-url @app-state)} "Plot!"])
+
 (defn controls []
   [:div#controls
    [:div.field.has-addons
     [:div.control.is-expanded
      [url-input]]
     [:div.control
-     [:a#plot.button.is-info {:on-click #(parse-url @app-state)} "Plot!"]]]
+     [plot-button]]]
    [:div.field.is-grouped.is-grouped-centered
     [:div.control
      [:label.checkbox
