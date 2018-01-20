@@ -108,7 +108,7 @@
   [response]
   (.log js/console (clj->js [:response response]))
   (if (@app-state :add-to-plot)
-    (swap! app-state update :data conj response)
+    (swap! app-state update :data into response)
     (swap! app-state assoc :data response)))
 
 (defn parse-url-error [response]
