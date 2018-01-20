@@ -13,6 +13,45 @@
                         :url url-placeholder
                         :data []}))
 
+;; ------------------------
+;; Helper functions
+
+(defn by-id [id]
+  (.getElementById js/document id))
+
+;; ------------------------
+;; Scrolling stuff
+;;   From https://gist.github.com/jasich/21ab25db923e85e1252bed13cf65f0d8
+
+(defn cur-doc-top []
+  (+ (.. js/document -body -scrollTop) (.. js/document -documentElement -scrollTop)))
+
+(defn element-top [elem top]
+  (if (.-offsetParent elem)
+    (let [client-top (or (.-clientTop elem) 0)
+          offset-top (.-offsetTop elem)]
+      (+ top client-top offset-top (element-top (.-offsetParent elem) top)))
+    top))
+
+(defn scroll-to-id
+  [elem-id]
+  (let [speed 400
+        moving-frequency 10
+        elem (by-id elem-id)
+        hop-count (/ speed moving-frequency)
+        doc-top (cur-doc-top)
+        gap (/ (- (element-top elem 0) doc-top) hop-count)]
+    (doseq [i (range 1 (inc hop-count))]
+      (let [hop-top-pos (* gap i)
+            move-to (+ hop-top-pos doc-top)
+            timeout (* moving-frequency i)]
+        (.setTimeout js/window (fn []
+                                 (.scrollTo js/window 0 move-to))
+                     timeout)))))
+
+;; ------------------------
+;; Google Maps stuff
+
 (defn gmap-latlng
   [{:keys [lat lng]}]
   (js/google.maps.LatLng. lat lng))
@@ -100,10 +139,12 @@
       (fn [this]
         (let [data (-> this r/props :data)]
           (do-plot! @map-atom markers data)
-          (compute-and-fit-bounds @map-atom data)))
+          (compute-and-fit-bounds @map-atom data)
+          (scroll-to-id "recommendation-map")
+          ))
       :reagent-render
       (fn []
-        [:div {:style {:height "100vh"}}])})))
+        [:div#recommendation-map {:style {:height "100vh"}}])})))
 
 (defn handle-data
   [response]
@@ -187,9 +228,6 @@
    [:div.container.is-widescreen
     ;; props passed to a reagent component must be a map
     [recommendation-map {:data (@app-state :data)}]]])
-
-(defn by-id [id]
-  (.getElementById js/document id))
 
 (defn ^:export run []
   (r/render [app]
