@@ -6,12 +6,12 @@
 
 (enable-console-print!)
 
-(def url-placeholder "Enter your url here (from sethlui, smartlocal...)")
+(def url-placeholder "Paste url here (from sethlui, smartlocal...)")
 
 (def app-state (r/atom {:add-to-plot false
                         :loading false
                         :error-message nil
-                        :url url-placeholder
+                        :url ""
                         :data []}))
 
 ;; ------------------------
@@ -180,14 +180,6 @@
   (when (= "Enter" (.-key e))
     (parse-url @app-state)))
 
-(defn url-input-handle-focus [e]
-  (when (= (@app-state :url) url-placeholder)
-    (swap! app-state assoc :url "")))
-
-(defn url-input-handle-blur [e]
-  (when (str/blank? (@app-state :url))
-    (swap! app-state assoc :url url-placeholder)))
-
 (defn url-input-handle-change [e]
   (swap! app-state assoc :url (.. e -target -value)))
 
@@ -195,21 +187,31 @@
   [:input#url.input
    {:type "text"
     :value (@app-state :url)
+    :placeholder url-placeholder
     :on-key-press url-input-handle-key-press
-    :on-focus url-input-handle-focus
-    :on-blur url-input-handle-blur
     :on-change url-input-handle-change}])
 
 (defn plot-button []
-  [:a#plot
-   {:class ["button" "is-info" (when (@app-state :loading) "is-loading")]
-    :on-click #(parse-url @app-state)} "Plot!"])
+  [:a#plot.button.is-info
+   {:class (when (@app-state :loading) "is-loading")
+    :on-click #(parse-url @app-state)}
+   [:span.icon
+    [:i.fas.fa-chevron-right]]])
+
+(defn clear-button []
+  [:a#clear.button
+   [:span.icon.is-small.has-text-grey-light
+    {:on-click #(swap! app-state assoc :url "")}
+    [:i.fas.fa-times]]])
 
 (defn controls []
   [:div#controls
    [:div.field.has-addons
     [:div.control.is-expanded
      [url-input]]
+    (when (not (str/blank? (@app-state :url)))
+      [:div.control
+       [clear-button]])
     [:div.control
      [plot-button]]]
    [:div.field.is-grouped.is-grouped-centered
@@ -227,8 +229,8 @@
   (swap! app-state assoc :error-message nil))
 
 (defn error-modal []
-  [:div#error
-   {:class ["modal" (when (@app-state :error-message) "is-active")]}
+  [:div#error.modal
+   {:class (when (@app-state :error-message) "is-active")}
    [:div.modal-background
     {:on-click clear-error}]
    [:div.modal-content
