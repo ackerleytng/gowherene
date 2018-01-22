@@ -1,10 +1,10 @@
-(ns playout.reader.tagger-test
+(ns gowherene.reader.tagger-test
   (:require [clojure.test :refer :all]
             [clojure.pprint :refer [pprint]]
             [hickory.core :refer [parse parse-fragment as-hickory]]
             [hickory.zip :refer [hickory-zip]]
             [clojure.zip :as zip]
-            [playout.reader.tagger :refer :all]))
+            [gowherene.reader.tagger :refer :all]))
 
 (deftest test-find
   (let [addresses ["201 Henderson Road #07-05 Apex Singapore 159545"
@@ -140,7 +140,7 @@
 (deftest test-bucket-loc-level-tiffany
   (testing "level-tiffany"
     (let [zipper (->> "<table><tr><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl00_lblStoreName\" class=\"storeName\">ION Orchard</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl00_lblAddress1\">2 Orchard Turn<br>#01-21 and #02-11<br>Singapore 238801<br>+65 6884 4880<br>Open Daily: 10am- 10pm<br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl00_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/ion-orchard-street\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/ion-orchard-street';return false\">View on Map</a></li></ul></div><br></td><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl01_lblStoreName\" class=\"storeName\">Singapore Changi Airport Terminal 2</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl01_lblAddress1\">Departure/Transit Lounge South<br>Unit 026-078 Terminal 2<br>Singapore 819643<br>+65 6543 2443<br>Open Daily: 6:00am – 1:00am <br><br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl01_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-2\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-2';return false\">View on Map</a></li></ul></div><br></td><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl02_lblStoreName\" class=\"storeName\">Singapore Changi Airport Terminal 3</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl02_lblAddress1\">Departure/Transit Lounge South<br>Unit 02-18 Terminal 3<br>Singapore 819663<br>+65 6441 0018<br>Open Daily: 6:00am – 1:00am <br><br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl02_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/singapore-changi-airport-terminal-3\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/singapore-changi-airport-terminal-3';return false\">View on Map</a></li></ul></div><br></td><td><span id=\"rptGroup_ctl01_dtlStoreList_ctl03_lblStoreName\" class=\"storeName\">The Shoppes at Marina Bay Sands</span><br> <span id=\"rptGroup_ctl01_dtlStoreList_ctl03_lblAddress1\">2 Bayfront Avenue #B2-66/67/68<br>Singapore 018972<br>+65 6688 7728<br><br>Sun to Thu: 10:30-23:00<br>Fri to Sat: 10:30-23:30<br></span><div id=\"rptGroup_ctl01_dtlStoreList_ctl03_MapLink\"><ul id=\"contentLinkList\" class=\"storeList\" style=\"clear:both;margin-left:0\" visible=\"true\"><li class=\"bullet\"><a href=\"http://international.tiffany.com/jewelry-stores/shoppes-marina-bay-sands\" onclick=\"window.location.href='https://international.tiffany.com/jewelry-stores/map/shoppes-marina-bay-sands';return false\">View on Map</a></li></ul></div><br></td></tr></table>"
-                      parse-fragment 
+                      parse-fragment
                       (map as-hickory)
                       first
                       hickory-zip)
@@ -387,5 +387,3 @@
       (is (= '(["214 Geylang Road, Lorong 18" 9]
                ["214 Geylang Road, Lorong 18" 9])
              (buckets->addresses buckets))))))
-
-

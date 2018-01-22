@@ -1,4 +1,4 @@
-(ns playout.reader.core
+(ns gowherene.reader.core
   (:require [hickory.core :refer [as-hickory parse]]
             [hickory.zip :refer [hickory-zip]]
             [clj-http.client :as client]
@@ -10,7 +10,7 @@
             [environ.core :refer [env]]
             [medley.core :refer [take-upto distinct-by]]
             [slingshot.slingshot :refer [try+ throw+]]
-            [playout.reader.tagger :as tagger]))
+            [gowherene.reader.tagger :as tagger]))
 
 (def re-postal-code
   "Regex that matches Singapore postal codes.
@@ -56,7 +56,7 @@
     (if (zip/end? loc)
       ;; zip/root returns just the node, not a full zipper
       (zip/root loc)
-      (recur (zip/next 
+      (recur (zip/next
               (if (to-remove (:tag (zip/node loc)))
                 (zip/remove loc)
                 loc))))))
@@ -160,8 +160,8 @@
   (assoc datum tag info))
 
 (defn update-with-tag
-  "Given an old tag in a map m, 
-     get the value for the old tag in m, 
+  "Given an old tag in a map m,
+     get the value for the old tag in m,
      apply f on it,
      associate the new value back into m with key new-tag."
   [new-tag old-tag f m]
@@ -170,8 +170,8 @@
     (assoc m new-tag new-info)))
 
 (defn update-with-tag-seq
-  "Given an old tag in a map m, 
-     get the value for the old tag in m, 
+  "Given an old tag in a map m,
+     get the value for the old tag in m,
      apply f on it, (f returns a seq)
      clone m and
      associate the new value back into m's clones with key new-tag."

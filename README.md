@@ -1,4 +1,4 @@
-# playout
+# gowherene
 
 FIXME
 
@@ -33,7 +33,7 @@ Install the heroku toolbelt, then
 ```
 $ heroku plugins:install heroku-cli-deploy
 $ heroku create mappout --no-remote
-$ heroku deploy:jar target/playout-0.1.0-SNAPSHOT-standalone.jar --app mappout
+$ heroku deploy:jar target/gowherene-0.1.0-SNAPSHOT-standalone.jar --app mappout
 ```
 
 To see logs,

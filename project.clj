@@ -1,4 +1,4 @@
-(defproject playout "0.1.0-SNAPSHOT"
+(defproject gowherene "0.1.0-SNAPSHOT"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :min-lein-version "2.0.0"
@@ -21,7 +21,7 @@
                  [cljs-ajax "0.7.3"]]
   :plugins [[lein-ring "0.9.7"]
             [lein-figwheel "0.5.14"]]
-  :ring {:handler playout.handler/app}
+  :ring {:handler gowherene.handler/app}
   :cljsbuild {:builds [{:id "app"
                         :source-paths ["src"]
                         :figwheel true

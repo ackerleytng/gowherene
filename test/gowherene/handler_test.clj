@@ -1,7 +1,7 @@
-(ns playout.handler-test
+(ns gowherene.handler-test
   (:require [clojure.test :refer :all]
             [ring.mock.request :as mock]
-            [playout.handler :refer :all]))
+            [gowherene.handler :refer :all]))
 
 (deftest test-app
   (testing "main route"

@@ -1,13 +1,13 @@
-(ns playout.reader.core-test
+(ns gowherene.reader.core-test
   (:require [clojure.test :refer :all]
             [clojure.pprint :refer [pprint]]
             [hickory.core :refer [as-hickory parse]]
             [medley.core :refer [take-upto distinct-by]]
-            [playout.reader.core :refer :all]))
+            [gowherene.reader.core :refer :all]))
 
 (deftest test-reader-cheap-food-orchard
   (testing "cheap-food-orchard"
-    (let [hickory (->> (slurp "test/playout/reader/fixtures/cheap-food-orchard")
+    (let [hickory (->> (slurp "test/gowherene/reader/fixtures/cheap-food-orchard")
                        parse
                        as-hickory)
           response (process hickory)]
@@ -38,7 +38,7 @@
 
 (deftest test-reader-no-gst-restaurants
   (testing "no-gst-restaurants"
-    (let [hickory (->> (slurp "test/playout/reader/fixtures/no-gst-restaurants")
+    (let [hickory (->> (slurp "test/gowherene/reader/fixtures/no-gst-restaurants")
                        parse
                        as-hickory)
           response (process hickory)
@@ -73,7 +73,7 @@
 
 (deftest test-reader-no-gst-cafes
   (testing "no-gst-cafes"
-    (let [hickory (->> (slurp "test/playout/reader/fixtures/no-gst-cafes")
+    (let [hickory (->> (slurp "test/gowherene/reader/fixtures/no-gst-cafes")
                        parse
                        as-hickory)
           response (process hickory)
@@ -106,7 +106,7 @@
 
 (deftest test-reader-tiffany
   (testing "tiffany-singapore"
-    (let [hickory (->> "test/playout/reader/fixtures/tiffany-singapore"
+    (let [hickory (->> "test/gowherene/reader/fixtures/tiffany-singapore"
                        slurp
                        parse
                        as-hickory)
@@ -148,7 +148,7 @@
 
 (deftest test-reader-best-burgers
   (testing "best-burgers"
-    (let [hickory (->> (slurp "test/playout/reader/fixtures/best-burgers")
+    (let [hickory (->> (slurp "test/gowherene/reader/fixtures/best-burgers")
                        parse
                        as-hickory)
 

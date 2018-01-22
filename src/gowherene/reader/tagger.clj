@@ -1,4 +1,4 @@
-(ns playout.reader.tagger
+(ns gowherene.reader.tagger
   (:require [hickory.core :refer [parse parse-fragment as-hickory]]
             [hickory.zip :refer [hickory-zip]]
             [medley.core :refer [map-vals]]
@@ -9,11 +9,11 @@
 
 ;;; We make the assumption here that people will use the same
 ;;;   html tags, classes and attributes for a single address.
-;;; 
+;;;
 ;;; We also make the assumption that we have already "zoomed in" to tags surrounding an address.
-;;; The loc provided to loc->buckets should already be quite close to 
+;;; The loc provided to loc->buckets should already be quite close to
 ;;;   where the address is suspected to be.
-;;; 
+;;;
 ;;; 1. Get content of tags
 ;;; 2. For each content, get the path (see loc->path)
 ;;; 3. Bucket the content according to path
@@ -74,15 +74,15 @@
         "padang" "taman"
         "tanjong" "tg"]))
 
-(def english-suffix-patterns 
+(def english-suffix-patterns
   (map #(re-pattern
          ;; maximum of 3 words before the suffix
          ;; except for the word the
          (str "(?i)(?:\\b(?!the\\b)[a-z']+\\b ){1,3}\\b" %
               "\\b(?: \\b\\d{1,3}\\b)?"))
-       ;; Since words like Gardens could appear as area information in addresses 
+       ;; Since words like Gardens could appear as area information in addresses
        ;;   next to road names, such as Some Road in Serangoon Gardens,
-       ;;   we should place suffixes with higher probabilities 
+       ;;   we should place suffixes with higher probabilities
        ;;   of being real road names ahead.
        ;; This list is ordered by gut feel, in the absence of further data exploration
        ["road" "rd"
@@ -93,7 +93,7 @@
         "close" "cl"
         "crescent" "cres"
         "drive" "dr"
-        "place" "pl" 
+        "place" "pl"
         "alley" "bank"
         "bow" "central" "circle" "circuit" "circus"
         "concourse" "court" "cross" "crossing"
@@ -127,7 +127,7 @@
   ;;   if there are no english suffixes, then the presence of a malay prefix,
   ;;   and so on.
   ;; These help in cases like Some Road, Geylang Serai
-  ;;   "Some Road" is the road name we're looking for, 
+  ;;   "Some Road" is the road name we're looking for,
   ;;   and the other terms are more likely to be information about the area
   (concat english-suffix-patterns
           malay-prefix-patterns
@@ -153,10 +153,10 @@
 
 (defn walk-locs
   "Walk locs in this zipper in a lazy way. Only walks this node and all sub nodes."
-  [zipper] 
+  [zipper]
   ;; Find loc to stop at
   (let [stop-here (loc-after zipper)]
-    (take-while (fn [loc] (not 
+    (take-while (fn [loc] (not
                            (or (zip/end? loc)
                                (= loc stop-here))))
                 (iterate zip/next zipper))))
@@ -218,7 +218,7 @@
 (defn assign-points
   "Given [address parts, remaining parts of the string], assign points to this tagging"
   [[address-parts remaining-string]]
-  (let [raw-score (reduce (fn [sum [k _]] (+ sum (k address-parts-scores))) 
+  (let [raw-score (reduce (fn [sum [k _]] (+ sum (k address-parts-scores)))
                           0
                           (partition 2 address-parts))]
     (if (pos? raw-score)
@@ -289,4 +289,3 @@
 (defn find-tags
   [f zipper]
   (filter f (walk-locs zipper)))
-
