@@ -11,6 +11,7 @@
 (def app-state (r/atom {:add-to-plot false
                         :loading false
                         :error-message nil
+                        :about-active false
                         :url ""
                         :data []}))
 
@@ -240,14 +241,67 @@
                                   :on-click clear-error}]])
 
 ;; ------------------------
+;; About modal
+
+(defn gowherene []
+  [:span {:style {:word-spacing "-0.1em"}} "go where ne"])
+
+(defn clear-about []
+  (swap! app-state assoc :about-active false))
+
+(defn about-modal []
+  [:div#about.modal
+   {:class (when (@app-state :about-active) "is-active")}
+   [:div.modal-background
+    {:on-click clear-about}]
+   [:div.modal-content
+    [:div.box
+     [:article.media
+      [:div.media-left
+       [:figure.image.is-64x64
+        [:img {:src "img/gowherene.svg"}]]]
+      [:div.media-content
+       [:div.content
+        [:p
+         [:strong [gowherene]] [:br]
+         "For a special someone, who adorably adds the chinese particle "
+         "呢 (" [:em "ne"] ")"
+         " when wondering what to do, where to go, deferring the decision..."]
+        [:p "Use " [gowherene] " to plot locations from "
+         [:a {:href "http://thesmartlocal.com/read/cheap-food-orchard"} "recommendations"] ", "
+         [:a {:href "http://www.harveynorman.com.sg/store-finder.html"} "contact-us pages"]
+         ", to quickly evaluate your options!"]
+        [:p.is-size-7 "A clojure/clojurescript project by "
+         [:a {:href "https://github.com/ackerleytng"}
+          [:i.fab.fa-github] " ackerleytng"]]]]]]]
+   [:button.modal-close.is-large {:aria-label "close"
+                                  :on-click clear-about}]])
+
+;; ------------------------
+;; Header
+
+(defn header []
+  [:div.level.is-mobile
+   {:on-click #(swap! app-state assoc :about-active true)}
+   [:div.level-left
+    [:div.level-item
+     [:figure.image.is-64x64
+      [:img {:src "img/gowherene.svg"}]]]
+    [:div.level-item
+     [:h1.title [gowherene]]]
+    [:div.level-item
+     [:h2.subtitle.is-hidden-mobile {:style {:margin-left "1em"}} "map out your recommendations!"]]]])
+
+;; ------------------------
 ;; Main app
 
 (defn app []
   [:div
    [error-modal]
+   [about-modal]
    [:section.section
     [:div.container.is-fluid
-     [:h1.title "Mappout your recommendations!"]
+     [header]
      [controls]]]
    [:div.container.is-widescreen
     ;; props passed to a reagent component must be a map
