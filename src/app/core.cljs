@@ -28,6 +28,9 @@
 (defn window-no-query []
   (str js/window.location.origin js/window.location.pathname))
 
+(defn window-search []
+  (str/replace js/window.location.search #"^\?" ""))
+
 (defn history-push-state [s]
   (.pushState js/history {} "go where ne" s))
 
@@ -42,11 +45,17 @@
        (map url->query)
        (str/join "&")))
 
+(defn query->url [url]
+  (url/url-decode (str/replace url #"^q=" "")))
+
+(defn search->urls [search]
+  (->> (str/split search #"&")
+       (map query->url)))
+
 (def queried-urls (atom []))
 
 (add-watch queried-urls :queried-urls-watcher
            (fn [_ _ _ urls]
-             (.log js/console urls)
              (history-push-state (str (window-no-query) "?" (urls->search urls)))))
 
 ;; ------------------------
@@ -205,6 +214,19 @@
                  :error-handler parse-url-error
                  :response-format :json
                  :keywords? true}))
+
+(defn setup-queried-urls! []
+  (let [search (window-search)]
+    (when-not (str/blank? search)
+      (let [urls (search->urls search)
+            num-urls (count urls)]
+        (.log js/console (clj->js [:setup-queried-urls!-urls urls num-urls]))
+        (if (pos? num-urls)
+          (do (swap! app-state assoc :add-to-plot (< 1 num-urls))
+              (mapv #(parse-url {:url % :add-to-plot true}) urls)
+              (swap! app-state assoc :url (last urls))))))))
+
+(setup-queried-urls!)
 
 ;; ------------------------
 ;; Controls components
