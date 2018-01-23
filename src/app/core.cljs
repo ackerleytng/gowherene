@@ -2,7 +2,8 @@
   (:require [reagent.core :as r]
             [reagent.dom.server :as rs]
             [ajax.core :refer [GET]]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [cemerick.url :as url]))
 
 (enable-console-print!)
 
@@ -20,6 +21,33 @@
 
 (defn by-id [id]
   (.getElementById js/document id))
+
+(defn window-url []
+  (.. js/window -location -href))
+
+(defn window-no-query []
+  (str js/window.location.origin js/window.location.pathname))
+
+(defn history-push-state [s]
+  (.pushState js/history {} "go where ne" s))
+
+;; ------------------------
+;; Url management
+
+(defn url->query [url]
+  (str "q=" (url/url-encode url)))
+
+(defn urls->search [urls]
+  (->> urls
+       (map url->query)
+       (str/join "&")))
+
+(def queried-urls (atom []))
+
+(add-watch queried-urls :queried-urls-watcher
+           (fn [_ _ _ urls]
+             (.log js/console urls)
+             (history-push-state (str (window-no-query) "?" (urls->search urls)))))
 
 ;; ------------------------
 ;; Scrolling stuff
@@ -167,6 +195,10 @@
   [{:keys [url add-to-plot]}]
   (.log js/console (clj->js [:url url
                              :add-to-plot add-to-plot]))
+  ;; Keep track of queried urls
+  (if add-to-plot
+    (swap! queried-urls conj url)
+    (reset! queried-urls [url]))
   (swap! app-state assoc :loading true)
   (GET "/parse" {:params {:url url}
                  :handler handle-data
@@ -290,7 +322,8 @@
     [:div.level-item
      [:h1.title [gowherene]]]
     [:div.level-item
-     [:h2.subtitle.is-hidden-mobile {:style {:margin-left "1em"}} "map out your recommendations!"]]]])
+     [:h2.subtitle.is-hidden-mobile {:style {:margin-left "1em"}}
+      "map out your recommendations!"]]]])
 
 ;; ------------------------
 ;; Main app

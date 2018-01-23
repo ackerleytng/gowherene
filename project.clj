@@ -18,7 +18,8 @@
                  [org.clojure/clojurescript "1.9.946"]
                  [reagent "0.8.0-alpha2"]
                  [cljsjs/google-maps "3.18-1"]
-                 [cljs-ajax "0.7.3"]]
+                 [cljs-ajax "0.7.3"]
+                 [com.cemerick/url "0.1.1"]]
   :plugins [[lein-ring "0.9.7"]
             [lein-figwheel "0.5.14"]]
   :ring {:handler gowherene.handler/app}
