@@ -298,7 +298,12 @@
 ;; About modal
 
 (defn gowherene []
-  [:span {:style {:word-spacing "-0.1em"}} "go where ne"])
+  [:span {:style {:word-spacing "-0.13em"}} "go where ne"])
+
+(defn done-by []
+  [:p.is-size-7 "A clojure/clojurescript project by "
+   [:a {:href "https://github.com/ackerleytng"}
+    [:i.fab.fa-github] " ackerleytng"]])
 
 (defn clear-about []
   (swap! app-state assoc :about-active false))
@@ -325,9 +330,7 @@
          [:a {:href "http://thesmartlocal.com/read/cheap-food-orchard"} "recommendations"] ", "
          [:a {:href "http://www.harveynorman.com.sg/store-finder.html"} "contact-us pages"]
          ", to quickly evaluate your options!"]
-        [:p.is-size-7 "A clojure/clojurescript project by "
-         [:a {:href "https://github.com/ackerleytng"}
-          [:i.fab.fa-github] " ackerleytng"]]]]]]]
+        [done-by]]]]]]
    [:button.modal-close.is-large {:aria-label "close"
                                   :on-click clear-about}]])
 
@@ -348,6 +351,19 @@
       "map out your recommendations!"]]]])
 
 ;; ------------------------
+;; Footer
+
+(defn footer []
+  [:footer.footer
+   [:div.level
+    [:div.level-left
+     [:div.level-item
+      [:a {:on-click #(swap! app-state assoc :about-active true)} "About " [gowherene]]]]
+    [:div.level-right
+     [:div.level-item
+      [done-by]]]]])
+
+;; ------------------------
 ;; Main app
 
 (defn app []
@@ -360,7 +376,8 @@
      [controls]]]
    [:div.container.is-widescreen
     ;; props passed to a reagent component must be a map
-    [recommendation-map {:data (@app-state :data)}]]])
+    [recommendation-map {:data (@app-state :data)}]]
+   [footer]])
 
 (defn ^:export run []
   (r/render [app]
