@@ -300,11 +300,6 @@
 (defn gowherene []
   [:span {:style {:word-spacing "-0.13em"}} "go where ne"])
 
-(defn done-by []
-  [:p.is-size-7 "A clojure/clojurescript project by "
-   [:a {:href "https://github.com/ackerleytng"}
-    [:i.fab.fa-github] " ackerleytng"]])
-
 (defn clear-about []
   (swap! app-state assoc :about-active false))
 
@@ -330,7 +325,9 @@
          [:a {:href "http://thesmartlocal.com/read/cheap-food-orchard"} "recommendations"] ", "
          [:a {:href "http://www.harveynorman.com.sg/store-finder.html"} "contact-us pages"]
          ", to quickly evaluate your options!"]
-        [done-by]]]]]]
+        [:p.is-size-7 "A clojure/clojurescript project by "
+         [:a {:href "https://github.com/ackerleytng"}
+          [:span.icon [:i.fab.fa-github]] "ackerleytng"]]]]]]]
    [:button.modal-close.is-large {:aria-label "close"
                                   :on-click clear-about}]])
 
@@ -358,10 +355,18 @@
    [:div.level
     [:div.level-left
      [:div.level-item
-      [:a {:on-click #(swap! app-state assoc :about-active true)} "About " [gowherene]]]]
+      [:a {:on-click #(swap! app-state assoc :about-active true)}
+       [:span.icon [:i.far.fa-question-circle]] "About " [gowherene]]]
+     [:div.level-item
+      [:a {:href "https://docs.google.com/forms/d/e/1FAIpQLSeOl80MfgEdHzfptlb44MUakucRBjWwTBzZuVK85Zjtgi9A-Q/viewform"}
+       [:span.icon [:i.far.fa-flag]] "Report error"]]]
     [:div.level-right
      [:div.level-item
-      [done-by]]]]])
+      [:a {:href "https://www.paypal.me/ackerleytng/1"}
+       [:span.icon [:i.fab.fa-paypal]] "Help maintain " [gowherene]]]
+     [:div.level-item
+      [:a {:href "https://github.com/ackerleytng"}
+       [:span.icon [:i.fab.fa-github]] "ackerleytng"]]]]])
 
 ;; ------------------------
 ;; Main app
