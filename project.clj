@@ -16,20 +16,40 @@
                  [hickory "0.7.1"]
                  ;; For client-side
                  [org.clojure/clojurescript "1.9.946"]
-                 [reagent "0.8.0-alpha2"]
-                 [cljsjs/google-maps "3.18-1"]
+                 ;; Had to downgrade to 0.7.0 because
+                 ;; https://github.com/reagent-project/reagent/issues/307
+                 [reagent "0.7.0"]
                  [cljs-ajax "0.7.3"]
                  [com.cemerick/url "0.1.1"]]
   :plugins [[lein-ring "0.9.7"]
-            [lein-figwheel "0.5.14"]]
+            [lein-figwheel "0.5.14"]
+            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
   :ring {:handler gowherene.handler/app}
-  :cljsbuild {:builds [{:id "app"
+  :cljsbuild {:builds [{:id "dev"
                         :source-paths ["src"]
                         :figwheel true
                         :compiler {:main "app.core"
                                    :asset-path "js/out"
                                    :output-to "resources/public/js/main.js"
-                                   :output-dir "resources/public/js/out"}}]}
-  :profiles  {:uberjar {:aot :all}
+                                   :output-dir "resources/public/js/out"}}
+                       ;; For production: lein cljsbuild once min
+                       {:id "min"
+                        :source-paths ["src"]
+                        ;; This output directory is part of a hack
+                        :compiler {:output-to "target/cljs-output/public/js/main.js"
+                                   :output-dir "target/cljs-output/public/js"
+                                   ;; Uncomment to debug compilation
+                                   ;; :source-map "target/cljs-output/public/js/main.js.map"
+                                   :externs ["src/app/externs/google-maps.js"]
+                                   :main "app.core"
+                                   :optimizations :advanced
+                                   :pretty-print false}}]}
+  :profiles  {:uberjar {:aot :all
+                        ;; hack: By including this, lein will copy the production main.js output
+                        ;;   over the one from figwheel. The js/out directory still gets copied in,
+                        ;;   so that's not that great. The client won't load it though, so that's
+                        ;;   not so bad.
+                        :resource-paths ["target/cljs-output"]
+                        :prep-tasks [["cljsbuild" "once" "min"]]}
               :dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                    [ring/ring-mock "0.3.0"]]}})
