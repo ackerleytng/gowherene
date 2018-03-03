@@ -20,7 +20,8 @@
                  ;; https://github.com/reagent-project/reagent/issues/307
                  [reagent "0.7.0"]
                  [cljs-ajax "0.7.3"]
-                 [com.cemerick/url "0.1.1"]]
+                 [com.cemerick/url "0.1.1"]
+                 [binaryage/devtools "0.9.9"]]
   :plugins [[lein-ring "0.9.7"]
             [lein-figwheel "0.5.14"]
             [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
@@ -31,7 +32,11 @@
                         :compiler {:main "app.core"
                                    :asset-path "js/out"
                                    :output-to "resources/public/js/main.js"
-                                   :output-dir "resources/public/js/out"}}
+                                   :output-dir "resources/public/js/out"
+                                   :source-map true
+                                   :preloads [devtools.preload]
+                                   :external-config {:devtools/config {:features-to-install :all}}
+                                   :optimizations :none}}
                        ;; For production: lein cljsbuild once min
                        {:id "min"
                         :source-paths ["src"]
