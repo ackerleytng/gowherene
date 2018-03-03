@@ -1,13 +1,20 @@
 (ns gowherene.handler
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
-            [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
+            [ring.middleware.defaults :refer [wrap-defaults
+                                              site-defaults
+                                              api-defaults]]
             [ring.middleware.json :refer [wrap-json-response]]
             [ring.util.response :as resp]
             [gowherene.reader.core :as reader]))
 
+(defn wrap-dir-index
+  [handler]
+  (fn [req]
+    (handler (update req :uri
+                     #(if (= "/" %) "/index.html" %)))))
+
 (defroutes site-routes
-  (GET "/" [] (resp/redirect "/index.html"))
   (route/resources "/"))
 
 (defroutes api-routes
@@ -16,5 +23,5 @@
   (route/not-found "Not Found"))
 
 (defroutes app
-  (wrap-defaults site-routes site-defaults)
-  (wrap-json-response (wrap-defaults api-routes site-defaults)))
+  (wrap-dir-index (wrap-defaults site-routes site-defaults))
+  (wrap-json-response (wrap-defaults api-routes api-defaults)))
