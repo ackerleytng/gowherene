@@ -19,6 +19,7 @@
                  [org.clojure/clojurescript "1.10.238"]
                  [reagent "0.8.0-alpha2"]
                  [cljs-ajax "0.7.3"]
+                 [cljsjs/google-maps "3.18-1"]
                  [com.cemerick/url "0.1.1"]
                  [binaryage/devtools "0.9.9"]]
   :plugins [[lein-ring "0.9.7"]
@@ -44,7 +45,6 @@
                                    :output-dir "target/cljs-output/public/js"
                                    ;; Uncomment to debug compilation
                                    ;; :source-map "target/cljs-output/public/js/main.js.map"
-                                   :externs ["src/app/externs/google-maps.js"]
                                    :main "app.core"
                                    :optimizations :advanced
                                    :pretty-print false}}]}
