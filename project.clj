@@ -4,7 +4,7 @@
   :min-lein-version "2.0.0"
   :jvm-opts ["--add-modules" "java.xml.bind"]
 
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.9.0"]
                  [compojure "1.5.1"]
                  [ring/ring-defaults "0.2.1"]
                  [ring/ring-json "0.4.0"]
@@ -16,10 +16,8 @@
                  [slingshot "0.12.2"]
                  [hickory "0.7.1"]
                  ;; For client-side
-                 [org.clojure/clojurescript "1.9.946"]
-                 ;; Had to downgrade to 0.7.0 because
-                 ;; https://github.com/reagent-project/reagent/issues/307
-                 [reagent "0.7.0"]
+                 [org.clojure/clojurescript "1.10.238"]
+                 [reagent "0.8.0-alpha2"]
                  [cljs-ajax "0.7.3"]
                  [com.cemerick/url "0.1.1"]
                  [binaryage/devtools "0.9.9"]]
