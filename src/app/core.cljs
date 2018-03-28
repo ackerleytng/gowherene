@@ -189,11 +189,15 @@
   [response]
   (.log js/console (clj->js [:response response]))
   (swap! app-state assoc :loading false)
-  (if (zero? (count response))
-    (swap! app-state assoc :error-message "Couldn't find any addresses! :(")
-    (if (@app-state :add-to-plot)
-      (swap! app-state update :data into response)
-      (swap! app-state assoc :data response))))
+  (let [{:keys [error data]} response]
+    (cond error
+          (swap! app-state assoc :error-message error)
+
+          (@app-state :add-to-plot)
+          (swap! app-state update :data into data)
+
+          :else
+          (swap! app-state assoc :data data))))
 
 (defn parse-url-error [response]
   (.log js/console (clj->js [:error-response response]))

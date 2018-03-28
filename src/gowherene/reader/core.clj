@@ -1,16 +1,17 @@
 (ns gowherene.reader.core
   (:require [hickory.core :refer [as-hickory parse]]
             [hickory.zip :refer [hickory-zip]]
-            [clj-http.client :as client]
             [clojure.zip :as zip]
             [clojure.pprint :refer [pprint]]
             [clojure.string :as str]
             [clojure.data.json :as json]
             [hickory.select :as s]
+            [clj-http.client :as raw-client]
             [environ.core :refer [env]]
             [medley.core :refer [take-upto distinct-by]]
             [slingshot.slingshot :refer [try+ throw+]]
-            [gowherene.reader.tagger :as tagger]))
+            [gowherene.reader.tagger :as tagger]
+            [gowherene.reader.client :as client]))
 
 (def re-postal-code
   "Regex that matches Singapore postal codes.
@@ -25,20 +26,6 @@
 (def re-spaces
   "Regex to be used to replace all &nbsp;s as well as spaces"
   #"[\u00a0\s]+")
-
-(defn cleanup-input
-  [url]
-  (cond
-    (re-find #"^https?://" url) url
-    :else (str "http://" url)))
-
-(defn url->hickory
-  [url]
-  (-> url
-      client/get
-      :body
-      parse
-      as-hickory))
 
 (defn get-all-tags
   "Given a hickory, get all the tags in this hickory"
@@ -215,7 +202,7 @@
    ;; Default to 3 tries
    (geocode-google address 3))
   ([address tries]
-   (let [response (try+ (-> (client/get
+   (let [response (try+ (-> (raw-client/get
                              "https://maps.googleapis.com/maps/api/geocode/json"
                              {:query-params {:address address
                                              :key (env :google-api-token)}})
@@ -241,7 +228,7 @@
 
 (defn geocode-onemap
   [postal-code]
-  (let [response (-> (client/get
+  (let [response (-> (raw-client/get
                       "https://developers.onemap.sg/commonapi/search"
                       {:query-params {:searchVal postal-code
                                       :returnGeom "Y"
@@ -292,10 +279,28 @@
                  (sort-by (comp get-index :place))))
     result))
 
+(defn do-retrieve
+  [url]
+  (let [{:keys [status body]} (client/retrieve url)]
+    (if (= status 200)
+      {:error nil :data body}
+      {:error (str "Couldn't retrieve url! (" status ")") :data nil})))
+
 (defn handle
   [url]
   (println "incoming" url)
-  (->> url
-       cleanup-input
-       url->hickory
-       process))
+  (if url
+    (let [{:keys [error data] :as r} (do-retrieve url)]
+      (if error r
+          (try
+            (let [results (-> data
+                              parse
+                              as-hickory
+                              process)]
+              (if (zero? (count results))
+                {:error "Couldn't find any addresses! :(" :data nil}
+                {:error nil :data results}))
+            (catch Exception e
+              {:error (str "Error while reading requested page: (" (.getMessage e) ")")
+               :data nil}))))
+    {:error "Missing url!" :data nil}))

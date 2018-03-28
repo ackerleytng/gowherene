@@ -186,3 +186,19 @@
                         (map get-index)
                         (filter identity)))
              '(1 1 2 3 4 5 6 7 8 8 8 8 9 10 11 12 12 12 13 13 13 13 14 15))))))
+
+(deftest test-handle
+  (testing "handle missing url"
+    (let [response (handle nil)]
+      (is (nil? (:data response)))
+      (is (= "Missing url!" (:error response)))))
+
+  (testing "handle missing addresses"
+    (let [response (handle "http://httpstat.us/200")]
+      (is (nil? (:data response)))
+      (is (= "Couldn't find any addresses! :(" (:error response)))))
+
+  (testing "handle error on retrieving"
+    (let [response (handle "http://httpstat.us/404")]
+      (is (nil? (:data response)))
+      (is (= "Couldn't retrieve url! (404)" (:error response))))))
