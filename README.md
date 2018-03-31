@@ -1,6 +1,23 @@
 # gowherene
 
-FIXME
+gowherene is a webapp to help Singaporeans plot food recommendations, such as
+thesmartlocal's http://thesmartlocal.com/read/cheap-food-orchard, on a map. 
+
+These popular blogs do not have a map view for their recommendations, so I built
+gowherene to help visualise the geographical locations of the recommendations
+for better decision making.
+
+Some carefully-tested recommendations pages are
+
++ http://thesmartlocal.com/read/restaurants-with-no-gst
++ http://thesmartlocal.com/read/singapore-cafes-with-no-gst
++ https://sethlui.com/best-burgers-singapore/
++ https://www.sassymamasg.com/the-ultimate-guide-to-local-breakfast-in-singapore/
++ https://www.misstamchiak.com/local-breakfast-east-singapore/
+
+gowherene can also plot addresses, not just recommendations! Try:
+
++ http://international.tiffany.com/jewelry-stores/store-list/singapore
 
 ## Prerequisites
 
