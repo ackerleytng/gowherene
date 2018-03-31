@@ -48,7 +48,7 @@
 
           loc (first postal-code-locs)
 
-          data (hickory->data hickory)]
+          data (gather-address-info hickory)]
 
       ;; There shouldn't be any blank addresses
       (is (= (count (filter (comp clojure.string/blank? :address) data)) 0))
@@ -81,7 +81,7 @@
           tags-removed (remove-tags uninteresting-tags hickory)
           postal-code-locs (get-postal-code-locs tags-removed)
 
-          data (hickory->data hickory)]
+          data (gather-address-info hickory)]
 
       ;; There shouldn't be any blank addresses
       (is (= (count (filter (comp clojure.string/blank? :address) data)) 0))
@@ -111,7 +111,7 @@
                        parse
                        as-hickory)
 
-          ;; hickory->data, split up
+          ;; gather-address-info, split up
           tags-removed (remove-tags uninteresting-tags hickory)
           postal-code-locs (get-postal-code-locs tags-removed)
 
@@ -155,7 +155,7 @@
           tags-removed (remove-tags uninteresting-tags hickory)
 
           raw-result-before-geocoding (->> hickory
-                                           hickory->data
+                                           gather-address-info
                                            (distinct-by (fn [d] [(:place d) (:address d)])))
 
           response (process hickory)]

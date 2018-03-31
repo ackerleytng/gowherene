@@ -175,7 +175,7 @@
       (str/replace re-spaces " ")
       str/trim))
 
-(defn hickory->data
+(defn gather-address-info
   "Takes a hickory and returns a data of all the places and addresses on the page"
   [hickory]
   (->> hickory
@@ -192,10 +192,6 @@
        (mapcat (partial update-with-tag-seq :address :postal-code-loc loc->addresses))
        ;; Some postal-code-locs are misidentified, hence addresses cannot be found
        (filter :address)))
-
-(defn data-lookup
-  [data place]
-  (filter #(= place (:place %)) data))
 
 (defn geocode-google
   ([address]
@@ -234,26 +230,20 @@
                                       :returnGeom "Y"
                                       :getAddrDetails "Y"}})
                      :body
-                     json/read-json)
-        result (get-in response [:results 0])]
-    {:lat (Float/parseFloat (:LATITUDE result))
-     :lng (Float/parseFloat (:LONGITUDE result))}))
+                     json/read-json)]
+    (when (pos? (:found response))
+      (let [result (get-in response [:results 0])]
+        {:lat (Float/parseFloat (:LATITUDE result))
+         :lng (Float/parseFloat (:LONGITUDE result))}))))
 
 (defn geocode
   [address]
   (when address
     (if-let [postal-code (re-find re-postal-code address)]
-      (geocode-onemap postal-code)
+      (or (geocode-onemap postal-code)
+          ;; Fallback to google
+          (geocode-google address))
       (geocode-google address))))
-
-(defn data-add-geocode
-  "Takes a data and adds on geocoding"
-  [data]
-  (doall
-   (pmap
-    (fn [{:keys [place address] :as d}]
-      (assoc d :latlng (geocode address)))
-    data)))
 
 (defn get-index [header]
   (and header
@@ -267,12 +257,33 @@
        (filter #(:latlng %))
        (map #(select-keys % [:place :address :latlng]))))
 
+(defn- dedupe-data-retain-longer-names
+  "Given data, this function removes the location with the shorter name
+  if two or more locations have identical addresses"
+  [data]
+  (let [groups (group-by :address data)
+        partitions (group-by (fn [[a g]] (> (count g) 1)) groups)
+        uniques (map #(get-in % [1 0]) (partitions false))
+        longer-names (->> (partitions true)
+                          (map second)
+                          (map #(sort-by (comp count :place) > %))
+                          (map first))]
+    (lazy-cat uniques longer-names)))
+
+(defn data-add-geocoding
+  "Adds geocoding to data
+  Tries to minimize the number of geocoding requests by doing necessary deduplication first"
+  [data]
+  (->> data
+       (distinct-by (fn [d] [(:place d) (:address d)]))
+       dedupe-data-retain-longer-names
+       (pmap (partial update-with-tag :latlng :address geocode))))
+
 (defn process
   [hickory]
-  (let [raw-result (->> hickory
-                        hickory->data
-                        (distinct-by (fn [d] [(:place d) (:address d)]))
-                        (pmap (partial update-with-tag :latlng :address geocode)))
+  (let [raw-result (-> hickory
+                       gather-address-info
+                       data-add-geocoding)
         result (publish raw-result)]
     (pprint (->> raw-result
                  (map (partial simplify-datum))
