@@ -46,6 +46,20 @@ To start a web server for the application, run:
 $ lein ring server
 ```
 
+## Developing
+
+Start figwheel with
+
+```
+$ rlwrap lein figwheel
+```
+
+Start the server with
+
+```
+$ lein ring server-headless
+```
+
 ## Testing
 
 To write test cases, update the test case, then evaluate it (`C-M-x`), then re-run test cases (`C-c C-t C-n`)
