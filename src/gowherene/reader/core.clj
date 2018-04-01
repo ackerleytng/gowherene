@@ -10,8 +10,7 @@
             [environ.core :refer [env]]
             [medley.core :refer [take-upto distinct-by]]
             [slingshot.slingshot :refer [try+ throw+]]
-            [gowherene.reader.tagger :as tagger]
-            [gowherene.reader.client :as client]))
+            [gowherene.reader.tagger :as tagger]))
 
 (def re-postal-code
   "Regex that matches Singapore postal codes.
@@ -280,8 +279,10 @@
        (pmap (partial update-with-tag :latlng :address geocode))))
 
 (defn process
-  [hickory]
-  (let [raw-result (-> hickory
+  [page]
+  (let [raw-result (-> page
+                       parse
+                       as-hickory
                        gather-address-info
                        data-add-geocoding)
         result (publish raw-result)]
@@ -289,29 +290,3 @@
                  (map (partial simplify-datum))
                  (sort-by (comp get-index :place))))
     result))
-
-(defn do-retrieve
-  [url]
-  (let [{:keys [status body]} (client/retrieve url)]
-    (if (= status 200)
-      {:error nil :data body}
-      {:error (str "Couldn't retrieve url! (" status ")") :data nil})))
-
-(defn handle
-  [url]
-  (println "incoming" url)
-  (if url
-    (let [{:keys [error data] :as r} (do-retrieve url)]
-      (if error r
-          (try
-            (let [results (-> data
-                              parse
-                              as-hickory
-                              process)]
-              (if (zero? (count results))
-                {:error "Couldn't find any addresses! :(" :data nil}
-                {:error nil :data results}))
-            (catch Exception e
-              {:error (str "Error while reading requested page: (" (.getMessage e) ")")
-               :data nil}))))
-    {:error "Missing url!" :data nil}))
