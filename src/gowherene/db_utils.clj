@@ -1,12 +1,11 @@
 (ns gowherene.db-utils
   (:require [clojure.java.jdbc :as j]
-            [environ.core :refer [env]]))
+            [environ.core :refer [env]]
+            [heroku-database-url-to-jdbc.core :refer [korma-connection-map]]))
 
-(defonce db-spec {:dbtype   (env :db-type)
-                  :dbname   (env :db-name)
-                  :host     (env :db-host)
-                  :user     (env :db-user)
-                  :password (env :db-password)})
+(defonce db-spec (-> (env :database-url)
+                     korma-connection-map
+                     (assoc :ssl true :sslfactory "org.postgresql.ssl.NonValidatingFactory")))
 
 (defonce accesses-spec [[:id :serial]
                         [:time :bigint]

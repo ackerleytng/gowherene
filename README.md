@@ -38,6 +38,23 @@ the code often refers to `data` or `address-info`, a map of:
 | `:address`          | The address of this place                                                                                  |
 | `:latlng`           | The latitude and longitude of this place                                                                   |
 
+## Environment variables
+
+In `gowherene`, I am expecting the following environment variables to be in place.
+
+| key                 | value                                   |
+| ---                 | ---                                     |
+| `:google-api-token` | API token for Google Maps geocoding API |
+| `:database-url`     | Database url for logging                |
+
+
+For development, I use a `.lein-env` file in the project directory, which looks like
+
+```
+{:google-api-token "xxx"
+ :database-url     "xxx"}
+```
+
 ## Running
 
 To start a web server for the application, run:

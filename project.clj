@@ -8,6 +8,8 @@
                  [ring/ring-defaults "0.2.1"]
                  [ring/ring-json "0.4.0"]
                  [environ "1.1.0"]
+                 ;; Logging
+                 [heroku-database-url-to-jdbc "0.2.2"]
                  [org.clojure/core.async "0.4.474"]
                  [org.clojure/java.jdbc "0.7.5"]
                  [org.postgresql/postgresql "42.2.2"]
