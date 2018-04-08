@@ -5,6 +5,29 @@
             [medley.core :refer [take-upto distinct-by]]
             [gowherene.reader.core :refer :all]))
 
+(deftest test-retain-longer-names
+  (testing "retain longer names"
+    (is (= [{:place "Unrelated"
+             :address "address"}
+            {:place "Weirdzzzz"
+             :address "address"}
+            {:place "Totally Different"
+             :address "address"}
+            {:place "Short Name Longer Complete"
+             :address "address"}]
+           (retain-longer-names [{:place "Unrelated"
+                                  :address "address"}
+                                 {:place "Weirdzzzz"
+                                  :address "address"}
+                                 {:place "Short Name"
+                                  :address "address"}
+                                 {:place "Short Name Longer"
+                                  :address "address"}
+                                 {:place "Totally Different"
+                                  :address "address"}
+                                 {:place "Short Name Longer Complete"
+                                  :address "address"}])))))
+
 (deftest test-reader-cheap-food-orchard
   (testing "cheap-food-orchard"
     (let [page (slurp "test/gowherene/reader/fixtures/cheap-food-orchard")

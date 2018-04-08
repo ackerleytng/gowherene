@@ -256,6 +256,19 @@
        (filter #(:latlng %))
        (map #(select-keys % [:place :address :latlng]))))
 
+(defn retain-longer-names
+  "Takes a fragment of data, already sorted in order of place length"
+  ([data-fragment]
+   (retain-longer-names data-fragment []))
+  ([[d & ds] accum]
+   (if-let [place (:place d)]
+     (if (some #(and (str/starts-with? % place) (not= place %))
+               (map :place ds))
+       ;; There exists longer versions of this place's name
+       (recur ds accum)
+       (recur ds (conj accum d)))
+     accum)))
+
 (defn- dedupe-data-retain-longer-names
   "Given data, this function removes the location with the shorter name
   if two or more locations have identical addresses"
@@ -263,10 +276,11 @@
   (let [groups (group-by :address data)
         partitions (group-by (fn [[a g]] (> (count g) 1)) groups)
         uniques (map #(get-in % [1 0]) (partitions false))
+
         longer-names (->> (partitions true)
                           (map second)
-                          (map #(sort-by (comp count :place) > %))
-                          (map first))]
+                          (map (partial sort-by (comp count :place)))
+                          (mapcat retain-longer-names))]
     (lazy-cat uniques longer-names)))
 
 (defn data-add-geocoding
