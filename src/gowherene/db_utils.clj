@@ -1,7 +1,9 @@
 (ns gowherene.db-utils
   (:require [clojure.java.jdbc :as j]
             [environ.core :refer [env]]
-            [heroku-database-url-to-jdbc.core :refer [korma-connection-map]]))
+            [heroku-database-url-to-jdbc.core :refer [korma-connection-map]]
+            [monger.core :as mg]
+            [monger.collection :as mc]))
 
 (defonce db-spec (-> (env :database-url)
                      korma-connection-map
@@ -29,6 +31,11 @@
   (do (drop-accesses-table!)
       (create-accesses-table!)))
 
-(def migrate create-accesses-table!)
-(def rollback drop-accesses-table!)
-(def cleanup clear-accesses-table!)
+(def cleanup-accesses clear-accesses-table!)
+
+(defn cleanup-requests
+  []
+  (let [uri (env :requests-database-url)
+        {:keys [conn db]} (mg/connect-via-uri uri)]
+    (mc/remove db "requests")
+    (mg/disconnect conn)))

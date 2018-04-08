@@ -14,6 +14,7 @@
                  [org.clojure/java.jdbc "0.7.5"]
                  [org.postgresql/postgresql "42.2.2"]
                  [korma "0.4.3"]
+                 [com.novemberain/monger "3.1.0"]
                  ;; For reader
                  [medley "1.0.0"]
                  [clj-http "3.7.0"]
@@ -55,10 +56,10 @@
                                        :main          "app.core"
                                        :optimizations :advanced
                                        :pretty-print  false}}]}
-  :aliases {"migrate"  ["run" "-m" "gowherene.db-utils/migrate"]
-            "rollback" ["run" "-m" "gowherene.db-utils/rollback"]
-            "cleanup"  ["run" "-m" "gowherene.db-utils/cleanup"]
-            "logs"  ["run" "-m" "gowherene.logging/show-accesses"]}
+  :aliases {"accesses-cleanup" ["run" "-m" "gowherene.db-utils/cleanup-accesses"]
+            "accesses-show"    ["run" "-m" "gowherene.logging/show-accesses"]
+            "requests-cleanup" ["run" "-m" "gowherene.db-utils/cleanup-requests"]
+            "requests-show"    ["run" "-m" "gowherene.logging/show-requests"]}
   :profiles  {:uberjar {:aot            :all
                         ;; hack: By including this, lein will copy the production main.js output
                         ;;   over the one from figwheel. The js/out directory still gets copied in,
