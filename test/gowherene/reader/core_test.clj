@@ -7,10 +7,8 @@
 
 (deftest test-reader-cheap-food-orchard
   (testing "cheap-food-orchard"
-    (let [hickory (->> (slurp "test/gowherene/reader/fixtures/cheap-food-orchard")
-                       parse
-                       as-hickory)
-          response (process hickory)]
+    (let [page (slurp "test/gowherene/reader/fixtures/cheap-food-orchard")
+          response (process page)]
 
       ;; There are 23 items parsed
       (is (= (count response) 23))
@@ -38,10 +36,11 @@
 
 (deftest test-reader-no-gst-restaurants
   (testing "no-gst-restaurants"
-    (let [hickory (->> (slurp "test/gowherene/reader/fixtures/no-gst-restaurants")
+    (let [page (slurp "test/gowherene/reader/fixtures/no-gst-restaurants")
+          hickory (->> page
                        parse
                        as-hickory)
-          response (process hickory)
+          response (process page)
 
           tags-removed (remove-tags uninteresting-tags hickory)
           postal-code-locs (get-postal-code-locs tags-removed)
@@ -61,22 +60,76 @@
              (clojure.set/difference (get-all-tags hickory)
                                      (get-all-tags tags-removed))))
 
-      (is (= (count response) 18))
+      (is (= 18 (count response)))
 
-      (is (= (count (filter (comp nil? :latlng) response)) 0))
+      (is (= 0 (count (filter (comp nil? :latlng) response))))
 
-      (is (= (sort (->> response
+      (is (= (range 1 19)
+             (sort (->> response
                         (map :place)
                         (map get-index)
-                        (filter identity)))
-             (range 1 19))))))
+                        (filter identity))))))))
+
+(deftest test-reader-the-ultimate-guide-to-local-breakfast-in-singapore
+  (testing "the-ultimate-guide-to-local-breakfast-in-singapore"
+    (let [page (slurp "test/gowherene/reader/fixtures/the-ultimate-guide-to-local-breakfast-in-singapore")
+          response (process page)]
+      (is (= 10 (count response)))
+
+      (is (= 0 (count (filter (comp nil? :latlng) response))))
+
+      (is (= '("188211" "199660" "207671" "289876" "311125"
+               "390034" "402001" "428903" "460207" "570024")
+             (sort (->> response
+                        (map :address)
+                        (map (partial re-find re-postal-code)))))))))
+
+(deftest test-reader-local-breakfast-east-singapore
+  (testing "local-breakfast-east-singapore"
+    (let [page (slurp "test/gowherene/reader/fixtures/local-breakfast-east-singapore")
+          response (process page)]
+      (is (= 27 (count response)))
+
+      (is (= 0 (count (filter (comp nil? :latlng) response))))
+
+      (is (= '("Bedok Chwee Kueh"
+               "Chai Chee Fried Carrot Cake"
+               "Chin Mee Chin Confectionery"
+               "Da Zhong Mei Shi Char Kway Teow"
+               "Dong Ji Fried Kway Teow"
+               "Enak"
+               "Fu Yuan Minced Pork Noodle"
+               "Glory Catering"
+               "Hock Choon Laksa and Lor Mee"
+               "Hon Ni Kitchen"
+               "Hua Zai HK Style Roasted Delight Rice/Noodle and Muslim Food"
+               "Jia Mei Wanton Mee"
+               "Joo Chiat Chiap Kee"
+               "Kim Choo Kueh Chang"
+               "Lek Lim Nonya Cake Confectionery"
+               "Mizzy Corner"
+               "Mr and Mrs Mohgan’s Super Crispy Roti Prata"
+               "Ru Ji Kitchen"
+               "Song Han Carrot Cake"
+               "Song Zhou Carrot Cake"
+               "Tan Beng Otah Delights"
+               "Tian Nan Xing Minced Pork Noodle"
+               "Toast Hut"
+               "Xin Mei Xiang Lor Mee"
+               "Xing Yun Kway Chap"
+               "Yong He Bak Chor Seafood Noodles"
+               "Yummy Sarawak Kolo Mee")
+             (->> response
+                  (map :place)
+                  sort))))))
 
 (deftest test-reader-no-gst-cafes
   (testing "no-gst-cafes"
-    (let [hickory (->> (slurp "test/gowherene/reader/fixtures/no-gst-cafes")
+    (let [page (slurp "test/gowherene/reader/fixtures/no-gst-cafes")
+          hickory (->> page
                        parse
                        as-hickory)
-          response (process hickory)
+          response (process page)
 
           tags-removed (remove-tags uninteresting-tags hickory)
           postal-code-locs (get-postal-code-locs tags-removed)
@@ -94,15 +147,15 @@
              (clojure.set/difference (get-all-tags hickory)
                                      (get-all-tags tags-removed))))
 
-      (is (= (count response) 15))
+      (is (= 15 (count response)))
 
-      (is (= (count (filter (comp nil? :latlng) response)) 0))
+      (is (= 0 (count (filter (comp nil? :latlng) response))))
 
-      (is (= (sort (->> response
+      (is (= (range 1 16)
+             (sort (->> response
                         (map :place)
                         (map get-index)
-                        (filter identity)))
-             (range 1 16))))))
+                        (filter identity))))))))
 
 (deftest test-reader-tiffany
   (testing "tiffany-singapore"
@@ -148,7 +201,8 @@
 
 (deftest test-reader-best-burgers
   (testing "best-burgers"
-    (let [hickory (->> (slurp "test/gowherene/reader/fixtures/best-burgers")
+    (let [page (slurp "test/gowherene/reader/fixtures/best-burgers")
+          hickory (->> page
                        parse
                        as-hickory)
 
@@ -158,7 +212,7 @@
                                            gather-address-info
                                            (distinct-by (fn [d] [(:place d) (:address d)])))
 
-          response (process hickory)]
+          response (process page)]
 
       (testing "remove-tags has some effect"
         (is (= #{:script :iframe :ins :footer :header :title :style :head
@@ -186,19 +240,3 @@
                         (map get-index)
                         (filter identity)))
              '(1 1 2 3 4 5 6 7 8 8 8 8 9 10 11 12 12 12 13 13 13 13 14 15))))))
-
-(deftest test-handle
-  (testing "handle missing url"
-    (let [response (handle nil)]
-      (is (nil? (:data response)))
-      (is (= "Missing url!" (:error response)))))
-
-  (testing "handle missing addresses"
-    (let [response (handle "http://httpstat.us/200")]
-      (is (nil? (:data response)))
-      (is (= "Couldn't find any addresses! :(" (:error response)))))
-
-  (testing "handle error on retrieving"
-    (let [response (handle "http://httpstat.us/404")]
-      (is (nil? (:data response)))
-      (is (= "Couldn't retrieve url! (404)" (:error response))))))
