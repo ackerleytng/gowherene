@@ -2,7 +2,6 @@
   (:require [hickory.core :refer [as-hickory parse]]
             [hickory.zip :refer [hickory-zip]]
             [clojure.zip :as zip]
-            [clojure.pprint :refer [pprint]]
             [clojure.string :as str]
             [clojure.data.json :as json]
             [hickory.select :as s]
@@ -300,7 +299,8 @@
                        gather-address-info
                        data-add-geocoding)
         result (publish raw-result)]
-    (pprint (->> raw-result
-                 (map (partial simplify-datum))
-                 (sort-by (comp get-index :place))))
+    #_(clojure.pprint/pprint
+       (->> raw-result
+            (map (partial simplify-datum))
+            (sort-by (comp get-index :place))))
     result))

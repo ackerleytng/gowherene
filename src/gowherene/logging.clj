@@ -18,12 +18,13 @@
 (defn show-accesses []
   (pprint (select accesses)))
 
-(defn log-request [request response]
-  (let [uri (env :requests-database-url)
+(defn log-request [request response time]
+  (let [uri               (env :requests-database-url)
         {:keys [conn db]} (mg/connect-via-uri uri)]
     (mc/insert db "requests"
-               {:request request
-                :response response})
+               {:request  request
+                :response response
+                :time     time})
     (mg/disconnect conn)))
 
 (defn show-requests []

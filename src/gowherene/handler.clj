@@ -10,7 +10,7 @@
             [environ.core :refer [env]]
             [gowherene.reader.core :as reader]
             [gowherene.reader.client :as client]
-            [gowherene.logging :refer [log-access]]))
+            [gowherene.logging :refer [log-access log-request]]))
 
 ;; ------------------------
 ;; Handler code
@@ -24,7 +24,6 @@
 
 (defn handle
   [url]
-  (println "incoming" url)
   (if (or (nil? url) (= "" url))
     {:error "Missing url!" :data nil}
     (let [{:keys [error data] :as r} (do-retrieve url)]
@@ -74,7 +73,9 @@
 
 (defroutes api-routes
   (GET "/parse" [url]
-       (resp/response (handle url)))
+       (let [[time results] (do-with-timing #(handle url))]
+         (go (log-request url results time))
+         (resp/response results)))
   (route/not-found "Not Found"))
 
 (defroutes raw

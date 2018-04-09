@@ -4,9 +4,10 @@
   :min-lein-version "2.0.0"
   :jvm-opts ["--add-modules" "java.xml.bind"]
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [compojure "1.5.1"]
-                 [ring/ring-defaults "0.2.1"]
-                 [ring/ring-json "0.4.0"]
+                 [compojure "1.6.0"]
+                 [ring/ring-defaults "0.3.1"]
+                 [ring/ring-json "0.4.0" :exclusions [cheshire
+                                                      com.fasterxml.jackson.core/jackson-core]]
                  [environ "1.1.0"]
                  ;; Logging
                  [heroku-database-url-to-jdbc "0.2.2"]
@@ -14,22 +15,22 @@
                  [org.clojure/java.jdbc "0.7.5"]
                  [org.postgresql/postgresql "42.2.2"]
                  [korma "0.4.3"]
-                 [com.novemberain/monger "3.1.0"]
+                 [com.novemberain/monger "3.1.0" :exclusions [com.google.guava/guava]]
                  ;; For reader
                  [medley "1.0.0"]
-                 [clj-http "3.7.0"]
+                 [clj-http "3.8.0"]
                  [xtreak/clj-http-ssrf "0.2.2"]
                  [slingshot "0.12.2"]
                  [hickory "0.7.1"]
                  ;; For client-side
                  [org.clojure/clojurescript "1.10.238"]
                  [reagent "0.8.0-alpha2"]
-                 [cljs-ajax "0.7.3"]
+                 [cljs-ajax "0.7.3" :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [cljsjs/google-maps "3.18-1"]
                  [com.cemerick/url "0.1.1"]
                  [binaryage/devtools "0.9.9"]]
-  :plugins [[lein-ring "0.9.7"]
-            [lein-figwheel "0.5.14"]
+  :plugins [[lein-ring "0.12.4"]
+            [lein-figwheel "0.5.15"]
             [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
   :ring {:handler gowherene.handler/app
          :nrepl   {:start? true}}
