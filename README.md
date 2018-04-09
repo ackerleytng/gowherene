@@ -45,15 +45,48 @@ In `gowherene`, I am expecting the following environment variables to be in plac
 | key                 | value                                   |
 | ---                 | ---                                     |
 | `:google-api-token` | API token for Google Maps geocoding API |
-| `:database-url`     | Database url for logging                |
+| `:database-url`     | Database url for logging accesses       |
+| `:mongodb-uri`      | MongoDB uri for logging requests        |
 
 
 For development, I use a `.lein-env` file in the project directory, which looks like
 
 ```
 {:google-api-token "xxx"
- :database-url     "xxx"}
+ :database-url     "xxx"
+ :mongodb-uri      "xxx"}
 ```
+
+## Viewing/erasing logs
+
+There are a few lein aliases defined for viewing/erasing the request and access logs now. Development logs can be viewed with
+
+```
+$ lein accesses-show
+$ lein requests-show
+```
+
+To show logs stored with heroku, use
+
+```
+$ DATABASE_URL='<copy from heroku env>' lein accesses-show
+$ MONGODB_URI='<copy from heroku env>' lein requests-show
+```
+
+For the development MongoDB, I'm using MongoDB atlas, which only accepts connections from a whitelist of IPs. 
+You'll need to allow your (dynamic) IP through before MongoDB atlas will permit access.
+
+For the development accesses log, I'm using postgresql, hosted at ElephantSQL.
+I believe ElephantSQL does not have this system of whitelists.
+
+To erase the logs, do
+
+```
+$ lein accesses-cleanup
+$ lein requests-cleanup
+```
+
+The free databases have limits, hence the need to erase periodically.
 
 ## Running
 
