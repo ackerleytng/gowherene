@@ -19,7 +19,7 @@
   (pprint (select accesses)))
 
 (defn log-request [request response time]
-  (let [uri               (env :requests-database-url)
+  (let [uri               (env :mongodb-uri)
         {:keys [conn db]} (mg/connect-via-uri uri)]
     (mc/insert db "requests"
                {:request  request
@@ -28,7 +28,7 @@
     (mg/disconnect conn)))
 
 (defn show-requests []
-  (let [uri (env :requests-database-url)
+  (let [uri (env :mongodb-uri)
         {:keys [conn db]} (mg/connect-via-uri uri)]
     (pprint (mc/find-maps db "requests"))
     (mg/disconnect conn)))

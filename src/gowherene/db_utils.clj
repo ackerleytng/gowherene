@@ -35,7 +35,7 @@
 
 (defn cleanup-requests
   []
-  (let [uri (env :requests-database-url)
+  (let [uri (env :mongodb-uri)
         {:keys [conn db]} (mg/connect-via-uri uri)]
     (mc/remove db "requests")
     (mg/disconnect conn)))
