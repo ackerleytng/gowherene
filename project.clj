@@ -70,4 +70,5 @@
               :dev     {:dependencies [[javax.servlet/servlet-api "2.5"]
                                        [ring/ring-mock "0.3.2"]
                                        [org.clojure/tools.namespace "0.2.11"]]
-                        :source-paths ["dev"]}})
+                        :source-paths ["dev"]
+                        :env {:mongodb-uri "mongodb://root:password@localhost:27017/admin"}}})

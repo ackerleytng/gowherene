@@ -40,6 +40,8 @@ the code often refers to `data` or `address-info`, a map of:
 
 ## Dev Quickstart Guide
 
+First start a local mongodb server with `docker-compose up`.
+
 In emacs, do `cider-jack-in`, then at the `user>` prompt, do
 
 ```
