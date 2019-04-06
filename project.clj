@@ -2,36 +2,41 @@
   :description "gowherene plots addresses from recommendation pages in Singapore on a map!"
   :url "https://gowherene.herokuapp.com"
   :min-lein-version "2.0.0"
-  :jvm-opts ["--add-modules" "java.xml.bind"]
-  :dependencies [[org.clojure/clojure "1.9.0"]
-                 [compojure "1.6.0"]
-                 [ring/ring-defaults "0.3.1"]
+  :dependencies [[org.clojure/clojure "1.10.0"]
+                 [compojure "1.6.1"]
+                 [ring/ring-jetty-adapter "1.7.1"]
+                 [ring/ring-defaults "0.3.2"]
                  [ring/ring-json "0.4.0" :exclusions [cheshire
                                                       com.fasterxml.jackson.core/jackson-core]]
                  [environ "1.1.0"]
+                 [mount "0.1.16"]
+
                  ;; Logging
                  [heroku-database-url-to-jdbc "0.2.2"]
-                 [org.clojure/core.async "0.4.474"]
-                 [org.clojure/java.jdbc "0.7.5"]
-                 [org.postgresql/postgresql "42.2.2"]
+                 [org.clojure/core.async "0.4.490"]
+                 [org.clojure/java.jdbc "0.7.9"]
+                 [org.postgresql/postgresql "42.2.5"]
                  [korma "0.4.3"]
-                 [com.novemberain/monger "3.1.0" :exclusions [com.google.guava/guava]]
+                 [com.novemberain/monger "3.5.0" :exclusions [com.google.guava/guava]]
+
                  ;; For reader
-                 [medley "1.0.0"]
-                 [clj-http "3.8.0"]
+                 [medley "1.1.0"]
+                 [clj-http "3.9.1"]
                  [xtreak/clj-http-ssrf "0.2.2"]
                  [slingshot "0.12.2"]
                  [hickory "0.7.1"]
+
                  ;; For client-side
-                 [org.clojure/clojurescript "1.10.238"]
-                 [reagent "0.8.0-alpha2"]
-                 [cljs-ajax "0.7.3" :exclusions [com.fasterxml.jackson.core/jackson-core]]
+                 [org.clojure/clojurescript "1.10.520"]
+                 [reagent "0.8.1"]
+                 [cljs-ajax "0.8.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [cljsjs/google-maps "3.18-1"]
                  [com.cemerick/url "0.1.1"]
-                 [binaryage/devtools "0.9.9"]]
-  :plugins [[lein-ring "0.12.4"]
-            [lein-figwheel "0.5.15"]
-            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
+                 [binaryage/devtools "0.9.10"]]
+  :plugins [[lein-ring "0.12.5"]
+            [lein-figwheel "0.5.18"]
+            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]
+            [lein-environ "1.1.0"]]
   :ring {:handler gowherene.handler/app
          :nrepl   {:start? true}}
   :cljsbuild {:builds [{:id           "dev"
@@ -57,10 +62,10 @@
                                        :main          "app.core"
                                        :optimizations :advanced
                                        :pretty-print  false}}]}
-  :aliases {"accesses-cleanup" ["run" "-m" "gowherene.db-utils/cleanup-accesses"]
-            "accesses-show"    ["run" "-m" "gowherene.logging/show-accesses"]
-            "requests-cleanup" ["run" "-m" "gowherene.db-utils/cleanup-requests"]
-            "requests-show"    ["run" "-m" "gowherene.logging/show-requests"]}
+  :aliases {"accesses-cleanup" ["run" "-m" "gowherene.logging.accesses/cleanup-accesses"]
+            "accesses-show"    ["run" "-m" "gowherene.logging.accesses/show-accesses"]
+            "requests-cleanup" ["run" "-m" "gowherene.logging.requests/cleanup-requests"]
+            "requests-show"    ["run" "-m" "gowherene.logging.requests/show-requests"]}
   :profiles  {:uberjar {:aot            :all
                         ;; hack: By including this, lein will copy the production main.js output
                         ;;   over the one from figwheel. The js/out directory still gets copied in,
@@ -69,4 +74,7 @@
                         :resource-paths ["target/cljs-output"]
                         :prep-tasks     [["cljsbuild" "once" "min"]]}
               :dev     {:dependencies [[javax.servlet/servlet-api "2.5"]
-                                       [ring/ring-mock "0.3.0"]]}})
+                                       [ring/ring-mock "0.3.2"]
+                                       [org.clojure/tools.namespace "0.2.11"]]
+                        :source-paths ["dev"]
+                        :env {:database-url "postgresql://postgres:password@localhost:5432/accesses"}}})

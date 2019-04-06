@@ -1,22 +1,8 @@
-(ns gowherene.logging
+(ns gowherene.logging.requests
   (:require [clojure.pprint :refer [pprint]]
             [environ.core :refer [env]]
-            [gowherene.db-utils :refer [db-spec]]
-            [korma.db :refer [defdb postgres]]
-            [korma.core :refer [defentity select insert values]]
             [monger.core :as mg]
             [monger.collection :as mc]))
-
-(defdb logs-db (postgres db-spec))
-
-(defentity accesses)
-
-(defn log-access [time uri src]
-  (insert accesses
-          (values [{:time time :uri (or uri "") :src (or src "unknown")}])))
-
-(defn show-accesses []
-  (pprint (select accesses)))
 
 (defn log-request [request response time]
   (let [uri               (env :mongodb-uri)
@@ -31,4 +17,10 @@
   (let [uri (env :mongodb-uri)
         {:keys [conn db]} (mg/connect-via-uri uri)]
     (pprint (mc/find-maps db "requests"))
+    (mg/disconnect conn)))
+
+(defn cleanup-requests []
+  (let [uri (env :mongodb-uri)
+        {:keys [conn db]} (mg/connect-via-uri uri)]
+    (mc/remove db "requests")
     (mg/disconnect conn)))

@@ -1,4 +1,4 @@
-(ns gowherene.handler
+(ns gowherene.app.handler
   (:require [clojure.core.async :refer [go]]
             [compojure.core :refer :all]
             [compojure.route :as route]
@@ -10,7 +10,8 @@
             [environ.core :refer [env]]
             [gowherene.reader.core :as reader]
             [gowherene.reader.client :as client]
-            [gowherene.logging :refer [log-access log-request]]))
+            [gowherene.logging.accesses :refer [log-access]]
+            [gowherene.logging.requests :refer [log-request]]))
 
 ;; ------------------------
 ;; Handler code
@@ -68,7 +69,7 @@
     (handler (update req :uri
                      #(if (= "/" %) "/index.html" %)))))
 
-(defroutes site-routes
+(defroutes static-routes
   (route/resources "/"))
 
 (defroutes api-routes
@@ -78,9 +79,9 @@
          (resp/response results)))
   (route/not-found "Not Found"))
 
-(defroutes raw
-  (wrap-dir-index (wrap-defaults site-routes site-defaults))
+(defroutes raw-routes
+  (wrap-dir-index (wrap-defaults static-routes site-defaults))
   (wrap-json-response (wrap-defaults api-routes api-defaults)))
 
-(defroutes app
-  (wrap-logging raw))
+(defroutes app-routes
+  (wrap-logging raw-routes))
