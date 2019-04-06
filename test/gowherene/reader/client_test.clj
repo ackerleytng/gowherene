@@ -2,17 +2,16 @@
   (:require [clojure.test :refer :all]
             [gowherene.reader.client :refer :all]))
 
-(deftest test-safe-get
+(deftest test-retrieve
   (let [unsafe-result {:status 403 :headers {} :body ""}]
-    (testing "safe-get"
-      (is (= nil (safe-get nil)))
-      (is (= unsafe-result (safe-get "file:///etc/passwd")))
-      (is (= unsafe-result (safe-get "ftp://ftp.random.com/files")))
-      (is (= unsafe-result (safe-get "http://www.random.com:1234/files")))
-      (is (= 200 (:status (safe-get "https://www.google.com/")))))
+    (testing "retrieve"
+      (is (= unsafe-result (retrieve "file:///etc/passwd")))
+      (is (= unsafe-result (retrieve "ftp://ftp.random.com/files")))
+      (is (= unsafe-result (retrieve "http://www.random.com:1234/files")))
+      (is (= 200 (:status (retrieve "https://www.google.com/")))))
     (testing "exceptional cases"
-      (is (= 404 (:status (safe-get "http://httpstat.us/404"))))
-      (is (= nil (safe-get "http://example.invalid"))))))
+      (is (= 404 (:status (retrieve "http://httpstat.us/404"))))
+      (is (= nil (retrieve "http://example.invalid"))))))
 
 (deftest test-maybe-prefix-url
   (testing "maybe-prefix-url"
