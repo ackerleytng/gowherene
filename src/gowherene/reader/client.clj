@@ -32,7 +32,10 @@
      {;; Handle HTTP exceptions as data instead (in status)
       :throw-exceptions    false
       ;; get will return nil if the host is unknown (cannot be resolved)
-      :ignore-unknown-host true})))
+      :ignore-unknown-host true
+      ;; Allow a maximum of 5 redirects, and don't throw an exception after
+      ;;   Not sure how to test being redirected too much
+      :max-redirects 5 :redirect-strategy :graceful})))
 
 (defn maybe-prefix-url
   [url]

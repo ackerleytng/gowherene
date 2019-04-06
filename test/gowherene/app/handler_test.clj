@@ -29,6 +29,11 @@
       (is (nil? (:data response)))
       (is (= "Couldn't retrieve url! (404)" (:error response)))))
 
+  (testing "handle redirects"
+    (let [response (handle "http://httpstat.us/301")]
+      (is (nil? (:data response)))
+      (is (= "Couldn't find any addresses! :(" (:error response)))))
+
   (testing "handle domains that cannot be resolved"
     (let [response (handle "something")]
       (is (nil? (:data response)))
