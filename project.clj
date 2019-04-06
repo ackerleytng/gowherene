@@ -29,12 +29,10 @@
                  [cljsjs/google-maps "3.18-1"]
                  [com.cemerick/url "0.1.1"]
                  [binaryage/devtools "0.9.10"]]
-  :plugins [[lein-ring "0.12.5"]
-            [lein-figwheel "0.5.18"]
+  :plugins [[lein-figwheel "0.5.18"]
             [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]
             [lein-environ "1.1.0"]]
-  :ring {:handler gowherene.handler/app
-         :nrepl   {:start? true}}
+  :main gowherene.core
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
                         :figwheel     true
