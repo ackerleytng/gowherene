@@ -1,7 +1,7 @@
 # gowherene
 
 gowherene is a webapp to help Singaporeans plot food recommendations, such as
-thesmartlocal's http://thesmartlocal.com/read/cheap-food-orchard, on a map. 
+thesmartlocal's http://thesmartlocal.com/read/cheap-food-orchard, on a map.
 
 These popular blogs do not have a map view for their recommendations, so I built
 gowherene to help visualise the geographical locations of the recommendations
@@ -27,7 +27,7 @@ You will need [Leiningen][] 2.0.0 or above installed.
 
 ## `data`
 
-While parsing a page to find address information, 
+While parsing a page to find address information,
 the code often refers to `data` or `address-info`, a map of:
 
 | key                 | value                                                                                                      |
@@ -37,6 +37,22 @@ the code often refers to `data` or `address-info`, a map of:
 | `:place`            | The name of this place                                                                                     |
 | `:address`          | The address of this place                                                                                  |
 | `:latlng`           | The latitude and longitude of this place                                                                   |
+
+## Dev Quickstart Guide
+
+In emacs, do `cider-jack-in`, then at the `user>` prompt, do
+
+```
+user> (start)
+... elided ...
+{:started ["#'dev/gowherene-app"]}
+```
+
+And then in another terminal window, do
+
+```
+curl -X GET 'http://localhost:3000/parse?url=http://thesmartlocal.com/read/restaurants-with-no-gst' | jq
+```
 
 ## Environment variables
 
@@ -73,7 +89,7 @@ $ DATABASE_URL='<copy from heroku env>' lein accesses-show
 $ MONGODB_URI='<copy from heroku env>' lein requests-show
 ```
 
-For the development MongoDB, I'm using MongoDB atlas, which only accepts connections from a whitelist of IPs. 
+For the development MongoDB, I'm using MongoDB atlas, which only accepts connections from a whitelist of IPs.
 You'll need to allow your (dynamic) IP through before MongoDB atlas will permit access.
 
 For the development accesses log, I'm using postgresql, hosted at ElephantSQL.

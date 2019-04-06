@@ -10,7 +10,6 @@
             [environ.core :refer [env]]
             [gowherene.reader.core :as reader]
             [gowherene.reader.client :as client]
-            [gowherene.logging.accesses :refer [log-access]]
             [gowherene.logging.requests :refer [log-request]]))
 
 ;; ------------------------
@@ -52,17 +51,6 @@
 ;; ------------------------
 ;; Ring stuff
 
-(defn wrap-logging
-  [handler]
-  (fn [req]
-    (let [uri (:uri req)]
-      (if (or (= uri "/") (= uri "/parse"))
-        (let [x-forwarded-for (get-in req [:headers "x-forwarded-for"])
-              [timing data] (do-with-timing #(handler req))]
-          (go (log-access timing uri x-forwarded-for))
-          data)
-        (handler req)))))
-
 (defn wrap-dir-index
   [handler]
   (fn [req]
@@ -79,9 +67,6 @@
          (resp/response results)))
   (route/not-found "Not Found"))
 
-(defroutes raw-routes
+(defroutes app-routes
   (wrap-dir-index (wrap-defaults static-routes site-defaults))
   (wrap-json-response (wrap-defaults api-routes api-defaults)))
-
-(defroutes app-routes
-  (wrap-logging raw-routes))

@@ -12,11 +12,7 @@
                  [mount "0.1.16"]
 
                  ;; Logging
-                 [heroku-database-url-to-jdbc "0.2.2"]
                  [org.clojure/core.async "0.4.490"]
-                 [org.clojure/java.jdbc "0.7.9"]
-                 [org.postgresql/postgresql "42.2.5"]
-                 [korma "0.4.3"]
                  [com.novemberain/monger "3.5.0" :exclusions [com.google.guava/guava]]
 
                  ;; For reader
@@ -62,9 +58,7 @@
                                        :main          "app.core"
                                        :optimizations :advanced
                                        :pretty-print  false}}]}
-  :aliases {"accesses-cleanup" ["run" "-m" "gowherene.logging.accesses/cleanup-accesses"]
-            "accesses-show"    ["run" "-m" "gowherene.logging.accesses/show-accesses"]
-            "requests-cleanup" ["run" "-m" "gowherene.logging.requests/cleanup-requests"]
+  :aliases {"requests-cleanup" ["run" "-m" "gowherene.logging.requests/cleanup-requests"]
             "requests-show"    ["run" "-m" "gowherene.logging.requests/show-requests"]}
   :profiles  {:uberjar {:aot            :all
                         ;; hack: By including this, lein will copy the production main.js output
@@ -76,5 +70,4 @@
               :dev     {:dependencies [[javax.servlet/servlet-api "2.5"]
                                        [ring/ring-mock "0.3.2"]
                                        [org.clojure/tools.namespace "0.2.11"]]
-                        :source-paths ["dev"]
-                        :env {:database-url "postgresql://postgres:password@localhost:5432/accesses"}}})
+                        :source-paths ["dev"]}})
