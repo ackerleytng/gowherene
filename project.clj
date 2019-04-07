@@ -30,8 +30,7 @@
                  [com.cemerick/url "0.1.1"]
                  [binaryage/devtools "0.9.10"]]
   :plugins [[lein-figwheel "0.5.18"]
-            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]
-            [lein-environ "1.1.0"]]
+            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
   :main gowherene.core
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
@@ -68,5 +67,4 @@
               :dev     {:dependencies [[javax.servlet/servlet-api "2.5"]
                                        [ring/ring-mock "0.3.2"]
                                        [org.clojure/tools.namespace "0.2.11"]]
-                        :source-paths ["dev"]
-                        :env {:mongodb-uri "mongodb://root:password@localhost:27017/admin"}}})
+                        :source-paths ["dev"]}})

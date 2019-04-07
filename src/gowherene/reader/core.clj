@@ -3,27 +3,14 @@
             [hickory.zip :refer [hickory-zip]]
             [clojure.zip :as zip]
             [clojure.string :as str]
-            [clojure.data.json :as json]
             [hickory.select :as s]
             [clj-http.client :as raw-client]
             [environ.core :refer [env]]
             [medley.core :refer [take-upto distinct-by]]
             [slingshot.slingshot :refer [try+ throw+]]
-            [gowherene.reader.tagger :as tagger]))
-
-(def re-postal-code
-  "Regex that matches Singapore postal codes.
-     According to URA, the largest postal code prefix in Singapore is 83
-     (74 is not a valid prefix, but it is included in this regex)"
-  #"\b(?:[0-7][0-9]|8[0-3])\d{4}\b")
-
-(def re-address
-  "Regex to match for address labels in text"
-  #"[Aa]ddress:?")
-
-(def re-spaces
-  "Regex to be used to replace all &nbsp;s as well as spaces"
-  #"[\u00a0\s]+")
+            [gowherene.reader.tagger :as tagger]
+            [gowherene.reader.geocoding :refer [geocode]]
+            [gowherene.reader.regexes :refer [re-postal-code re-address, re-spaces]]))
 
 (defn get-all-tags
   "Given a hickory, get all the tags in this hickory"
@@ -191,58 +178,6 @@
        ;; Some postal-code-locs are misidentified, hence addresses cannot be found
        (filter :address)))
 
-(defn geocode-google
-  ([address]
-   ;; Default to 3 tries
-   (geocode-google address 3))
-  ([address tries]
-   (let [response (try+ (-> (raw-client/get
-                             "https://maps.googleapis.com/maps/api/geocode/json"
-                             {:query-params {:address address
-                                             :key (env :google-api-token)}})
-                            :body
-                            json/read-json)
-                        (catch [:status 400] _
-                          (println (str "Issue geocoding |" address "|"))))
-         status (:status response)]
-     (cond
-       (nil? status)
-       response
-
-       (= "OK" status)
-       (get-in response [:results 0 :geometry :location])
-
-       (and (= "OVER_QUERY_LIMIT" status) (> tries 0))
-       (recur address (dec tries))
-
-       (and (= "OVER_QUERY_LIMIT" status) (zero? tries))
-       (println (str "Over query limit while geocoding |" address "|"))
-
-       :else (println (str status " while geocoding |" address "|"))))))
-
-(defn geocode-onemap
-  [postal-code]
-  (let [response (-> (raw-client/get
-                      "https://developers.onemap.sg/commonapi/search"
-                      {:query-params {:searchVal postal-code
-                                      :returnGeom "Y"
-                                      :getAddrDetails "Y"}})
-                     :body
-                     json/read-json)]
-    (when (pos? (:found response))
-      (let [result (get-in response [:results 0])]
-        {:lat (Float/parseFloat (:LATITUDE result))
-         :lng (Float/parseFloat (:LONGITUDE result))}))))
-
-(defn geocode
-  [address]
-  (when address
-    (if-let [postal-code (re-find re-postal-code address)]
-      (or (geocode-onemap postal-code)
-          ;; Fallback to google
-          (geocode-google address))
-      (geocode-google address))))
-
 (defn get-index [header]
   (and header
        (if-let [num (re-find #"(\d+)\." header)]
@@ -290,6 +225,21 @@
        (distinct-by (fn [d] [(:place d) (:address d)]))
        dedupe-data-retain-longer-names
        (pmap (partial update-with-tag :latlng :address geocode))))
+
+
+
+
+;; The problem faced is that there are many varied ways to display
+;;   locations and location labels at different pages, and this differs even within a site.
+;; Even for a single site like thesmartlocal, different pages have different formatting,
+;;   leading to many different expressions of location and location labels
+;; location = the address, or perhaps just the shopping mall or unit number and road name,
+;;            if full address information is missing
+;; location labels = the label for this location, such as branch name "Bugis+",
+;;   or the name of the recommendation, such as "13. Three Buns @ Potato Head Folk"
+
+
+
 
 (defn process
   [page]

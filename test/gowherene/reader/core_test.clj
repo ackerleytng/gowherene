@@ -3,7 +3,8 @@
             [clojure.pprint :refer [pprint]]
             [hickory.core :refer [as-hickory parse]]
             [medley.core :refer [take-upto distinct-by]]
-            [gowherene.reader.core :refer :all]))
+            [gowherene.reader.core :refer :all]
+            [gowherene.reader.regexes :refer :all]))
 
 (deftest test-retain-longer-names
   (testing "retain longer names"

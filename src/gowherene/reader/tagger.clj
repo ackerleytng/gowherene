@@ -3,7 +3,8 @@
             [hickory.zip :refer [hickory-zip]]
             [medley.core :refer [map-vals]]
             [clojure.zip :as zip]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [gowherene.reader.regexes :refer [re-postal-code re-spaces]]))
 
 ;;;; General Algorithm
 
@@ -41,12 +42,6 @@
 (defn find-house-number
   [s]
   (re-find re-house-number s))
-
-(def re-postal-code
-  "Regex that matches Singapore postal codes.
-     According to URA, the largest postal code prefix in Singapore is 83
-     (74 is not a valid prefix, but it is included in this regex)"
-  #"(?i)(?:\bsingapore\s|\bs\s|\bs|\b)\(?(?:[0-7][0-9]|8[0-3])\d{4}\b\)?")
 
 (defn find-postal-code
   [s]
@@ -195,10 +190,6 @@
               [v s]))
           [[] string]
           tagging-functions))
-
-(def re-spaces
-  "Regex to be used to replace all &nbsp;s as well as spaces"
-  #"[\u00a0\s]+")
 
 (defn count-words
   [str]
