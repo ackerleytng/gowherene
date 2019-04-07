@@ -12,4 +12,4 @@
 
 (def re-spaces
   "Regex to be used to replace all &nbsp;s as well as spaces"
-  #"[\u00a0\s]+")
+  #"[\u00a0 ]+")

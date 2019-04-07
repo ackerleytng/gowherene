@@ -58,10 +58,16 @@
   (let [{error :error
          {:keys [found results]} :data
          :as output} (raw-geocode-onemap postal-code)]
-    (when (pos? found)
+    (when (and found (pos? found))
       (let [result (get results 0)]
         {:lat (Float/parseFloat (:LATITUDE result))
          :lng (Float/parseFloat (:LONGITUDE result))}))))
+
+(defn add-latlng
+  [{:keys [type value] :as input}]
+  (case type
+    :postal-code
+    (assoc input :latlng (geocode-onemap value))))
 
 (defn geocode
   [address]

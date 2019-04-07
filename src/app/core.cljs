@@ -145,10 +145,10 @@
   (.setMap marker nil))
 
 (defn do-build-marker
-  [map-object {:keys [place address latlng]}]
-  (when place
-    (let [label (get (re-find #"^\s*(\d+)" place) 1)]
-      (gmap-marker map-object (gmap-latlng latlng) label place address))))
+  [map-object {:keys [label location latlng]}]
+  (when label
+    (let [index (get (re-find #"^\s*(\d+)" label) 1)]
+      (gmap-marker map-object (gmap-latlng latlng) index label location))))
 
 (defn do-plot!
   [map-object markers-atom data]
