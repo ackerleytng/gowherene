@@ -67,7 +67,8 @@
   [{:keys [type value] :as input}]
   (case type
     :postal-code
-    (assoc input :latlng (geocode-onemap value))))
+    (assoc input :latlng (geocode-onemap value))
+    nil))
 
 (defn geocode
   [address]
