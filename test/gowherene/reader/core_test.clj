@@ -4,7 +4,33 @@
             [hickory.core :refer [as-hickory parse]]
             [medley.core :refer [take-upto distinct-by]]
             [gowherene.reader.core :refer :all]
+            [gowherene.reader.geocodables :refer [find-postal-codes]]
             [gowherene.reader.regexes :refer :all]))
+
+(deftest integration-test-find-postal-codes
+  (testing "find results in no-gst-restaurants"
+    (let [page-zipper (->> (slurp "data/files/no-gst-restaurants.html")
+                           hickory-zipper
+                           cleanup)]
+      (is (= '({:type :postal-code, :value "247781"}
+               {:type :postal-code, :value "179103"}
+               {:type :postal-code, :value "258748"}
+               {:type :postal-code, :value "679697"}
+               {:type :postal-code, :value "259569"}
+               {:type :postal-code, :value "169339"}
+               {:type :postal-code, :value "419896"}
+               {:type :postal-code, :value "459114"}
+               {:type :postal-code, :value "597626"}
+               {:type :postal-code, :value "069043"}
+               {:type :postal-code, :value "228213"}
+               {:type :postal-code, :value "259569"}
+               {:type :postal-code, :value "188017"}
+               {:type :postal-code, :value "188392"}
+               {:type :postal-code, :value "187967"}
+               {:type :postal-code, :value "427677"}
+               {:type :postal-code, :value "247964"})
+             (->> (find-postal-codes page-zipper)
+                  (map #(dissoc % :loc))))))))
 
 (deftest test-retain-longer-names
   (testing "retain longer names"

@@ -7,7 +7,7 @@
   (let [node (zip/node loc)]
     (and (string? node) (re-find re-postal-code node))))
 
-(defn- find-postal-codes
+(defn find-postal-codes
   [page-zipper]
   (->> page-zipper
        (iterate zip/next)
