@@ -10,6 +10,12 @@
    loc
    (apply hselect/or (map hselect/tag [:h1 :h2 :h3 :h4]))))
 
+(defn content-earlier-header
+  [loc]
+  (let [header-loc (earlier-header loc)]
+    (when header-loc
+      (content (subtree header-loc)))))
+
 (defn add-label
   [{:keys [loc] :as input}]
-  (assoc input :label (content (subtree (earlier-header loc)))))
+  (assoc input :label (content-earlier-header loc)))
