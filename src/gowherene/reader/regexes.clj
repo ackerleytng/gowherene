@@ -10,6 +10,21 @@
   "Regex to match for address labels in text"
   #"[Aa]ddress:?")
 
+(def re-label
+  "Regex to match labels in nodes"
+  #"(?i)\b(?:where|address)\s*:")
+
 (def re-spaces
   "Regex to be used to replace all &nbsp;s as well as spaces"
   #"[\u00a0 ]+")
+
+(def re-unit-number-s
+  (let [number "[a-z]?\\d{1,4}[a-z]?"
+        separator " ?[-/] ?"
+        unit (str "#?b?" number "(?:" separator number ")+")]
+    (str "(?i)" unit "(?:\\s+(?:and|&)\\s+" unit ")*")))
+
+(def re-unit-number
+  "Regex that matches unit numbers
+     May include & or and to join unit numbers and slashes to indicate more units"
+  (re-pattern re-unit-number-s))
