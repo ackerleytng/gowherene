@@ -94,31 +94,6 @@
        publish))
 
 (comment
-  (def page (slurp "data/files/cheap-food-orchard.html"))
-  (def page (slurp "data/files/11-budget-buffets-in-singapore-20-and-below.html"))
-
-  (->> page
-       hickory-zipper
-       cleanup
-       geocodables
-       (map add-location)
-       (map add-label)
-       (pmap add-latlng)
-       (map #(update % :loc zip/node))
-       )
-
-  (->> page
-       hickory-zipper
-       cleanup
-       geocodables
-       (map #(dissoc % :loc))
-       (filter #(= :labelled (:type %))))
-
-
-  )
-
-
-(comment
   (def address-cap
     "We use (s/has-child (s/has-child (s/find-in-text re-address)))
      to match the `Address: ` label followed by the actual address.
