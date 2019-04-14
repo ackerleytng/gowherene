@@ -21,7 +21,7 @@ gowherene can also plot addresses, not just recommendations! Try:
 
 ## Prerequisites
 
-You will need [Leiningen][] 2.0.0 or above installed.
+You will need [Leiningen][] 2.5.3 or above installed.
 
 [leiningen]: https://github.com/technomancy/leiningen
 
@@ -38,7 +38,7 @@ the code often refers to `data` or `address-info`, a map of:
 | `:address`          | The address of this place                                                                                  |
 | `:latlng`           | The latitude and longitude of this place                                                                   |
 
-## Dev Quickstart Guide
+## Developing
 
 First start a local mongodb server with `docker-compose up`.
 
@@ -56,15 +56,19 @@ And then in another terminal window, do
 curl -X GET 'http://localhost:3000/parse?url=http://thesmartlocal.com/read/restaurants-with-no-gst' | jq
 ```
 
+To work on the frontend, do `C-c M-J` and when prompted, enter `figwheel`.
+
+Surf to `http://localhost:3000` to begin.
+
 ## Environment variables
 
 In `gowherene`, I am expecting the following environment variables to be in place.
 
-| key                 | value                                   |
-| ---                 | ---                                     |
-| `:google-api-token` | API token for Google Maps geocoding API |
-| `:database-url`     | Database url for logging accesses       |
-| `:mongodb-uri`      | MongoDB uri for logging requests        |
+| key                 | value                                                      |
+| ---                 | ---                                                        |
+| `:google-api-token` | API token for Google Maps geocoding API                    |
+| `:port`             | The port to run the server at (3000 would be good for dev) |
+| `:mongodb-uri`      | MongoDB uri for logging requests                           |
 
 
 For development, I use a `.lein-env` file in the project directory, which looks like
@@ -77,75 +81,47 @@ For development, I use a `.lein-env` file in the project directory, which looks 
 
 ## Viewing/erasing logs
 
-There are a few lein aliases defined for viewing/erasing the request and access logs now. Development logs can be viewed with
+There are a few lein aliases defined for viewing/erasing the request logs. Request logs can be viewed with
 
 ```
-$ lein accesses-show
 $ lein requests-show
 ```
 
 To show logs stored with heroku, use
 
 ```
-$ DATABASE_URL='<copy from heroku env>' lein accesses-show
 $ MONGODB_URI='<copy from heroku env>' lein requests-show
 ```
 
-For the development MongoDB, I'm using MongoDB atlas, which only accepts connections from a whitelist of IPs.
-You'll need to allow your (dynamic) IP through before MongoDB atlas will permit access.
-
-For the development accesses log, I'm using postgresql, hosted at ElephantSQL.
-I believe ElephantSQL does not have this system of whitelists.
+For the development MongoDB, I'm using the the mongodb docker image (see `docker-compose.yml`)
 
 To erase the logs, do
 
 ```
-$ lein accesses-cleanup
 $ lein requests-cleanup
 ```
 
 The free databases have limits, hence the need to erase periodically.
 
-## Running
-
-To start a web server for the application, run:
-
-```
-$ lein ring server
-```
-
-## Developing
-
-Start figwheel with
-
-```
-$ rlwrap lein figwheel
-```
-
-Start the server with
-
-```
-$ lein ring server-headless
-```
-
-## Testing
-
-To write test cases, update the test case, then evaluate it (`C-M-x`), then re-run test cases (`C-c C-t C-n`)
-
 ## Deploying on heroku
+
+Create the app with
+
+```
+$ heroku create gowherene --no-remote
+```
 
 Package for deployment with
 
 ```
 $ lein clean
-$ lein ring uberjar
+$ lein uberjar
 ```
 
 Install the heroku toolbelt, then
 
 ```
 $ heroku plugins:install heroku-cli-deploy
-$ heroku create gowherene --no-remote
 $ heroku deploy:jar target/gowherene-0.1.0-SNAPSHOT-standalone.jar --app gowherene
 ```
 

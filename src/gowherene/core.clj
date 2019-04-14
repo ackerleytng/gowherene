@@ -3,7 +3,8 @@
             [ring.adapter.jetty :refer [run-jetty]]
             [compojure.handler :as handler]
             [compojure.core :refer [routes]]
-            [gowherene.app.api :refer [app-routes]]))
+            [gowherene.app.api :refer [app-routes]])
+  (:gen-class))
 
 (defn start-gowherene []
   (-> (routes app-routes)
