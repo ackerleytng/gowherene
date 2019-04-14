@@ -152,11 +152,21 @@
   [marker]
   (.setMap marker nil))
 
+(defn render-location
+  [{:keys [postal-code unit-number road-name building-number]}]
+  (str/join
+   " "
+   [(or building-number "")
+    (or road-name "")
+    (or unit-number "")
+    (or (str "S(" postal-code ")") "")]))
+
 (defn do-build-marker
   [map-object {:keys [label location latlng]}]
   (let [index (when label (second (re-find #"^\s*(\d+)" label)))
-        latlng (gmap-latlng latlng)]
-    (gmap-marker map-object latlng index label location)))
+        latlng (gmap-latlng latlng)
+        location-str (render-location location)]
+    (gmap-marker map-object latlng index label location-str)))
 
 (defn do-plot!
   [map-object markers-atom data]
@@ -214,7 +224,6 @@
 
 (defn request [url]
   (let [endpoint (str api-root "/parse")]
-    (.log js/console endpoint)
     (GET endpoint {:params {:url url}
                    :handler handle-data
                    :error-handler parse-url-error
