@@ -9,6 +9,5 @@ pom.xml.asc
 /.lein-*
 /.nrepl-port
 /figwheel_server.log
-/resources/public/js/out
-/resources/public/js/main.js
+/resources/public/js/compiled
 .DS_Store

@@ -9,7 +9,7 @@
   (-> (routes app-routes)
       handler/site
       (run-jetty {:join? false
-                  :port (env :port)})))
+                  :port (if-let [port (env :port)] (Integer. port) 3000)})))
 
 (defn -main []
   (start-gowherene))

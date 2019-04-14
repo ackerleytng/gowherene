@@ -7,6 +7,8 @@
 
 (enable-console-print!)
 
+(def api-root "http://localhost:3000")
+
 (def url-placeholder "Paste url here (from sethlui, smartlocal...)")
 
 (def app-state (r/atom {:add-to-plot false
@@ -210,6 +212,15 @@
   (swap! app-state assoc :loading false)
   (swap! app-state assoc :error-message "Couldn't read your URL :("))
 
+(defn request [url]
+  (let [endpoint (str api-root "/parse")]
+    (.log js/console endpoint)
+    (GET endpoint {:params {:url url}
+                   :handler handle-data
+                   :error-handler parse-url-error
+                   :response-format :json
+                   :keywords? true})))
+
 (defn parse-url
   [{:keys [url add-to-plot]}]
   (.log js/console (clj->js [:url url
@@ -219,11 +230,7 @@
     (swap! queried-urls conj url)
     (reset! queried-urls [url]))
   (swap! app-state assoc :loading true)
-  (GET "/parse" {:params {:url url}
-                 :handler handle-data
-                 :error-handler parse-url-error
-                 :response-format :json
-                 :keywords? true}))
+  (request url))
 
 (defn setup-queried-urls! []
   (let [search (window-search)]
