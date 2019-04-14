@@ -10,12 +10,21 @@
    loc
    (apply hselect/or (map hselect/tag [:h1 :h2 :h3 :h4]))))
 
-(defn content-earlier-header
+(defn earlier-x-large
+  "Given a loc, find the loc before this loc that has a style containing `font-size: x-large`"
   [loc]
-  (let [header-loc (earlier-header loc)]
-    (when header-loc
-      (content (subtree header-loc)))))
+  (hselect/prev-pred
+   loc
+   (hselect/attr :style #(re-find #"font-size\s*:\s*x-large" %))))
+
+(defn label
+  [loc]
+  (when-let [found ((some-fn
+                     earlier-header
+                     earlier-x-large)
+                    loc)]
+    (content (subtree found))))
 
 (defn add-label
   [{:keys [loc] :as input}]
-  (assoc input :label (content-earlier-header loc)))
+  (assoc input :label (label loc)))
