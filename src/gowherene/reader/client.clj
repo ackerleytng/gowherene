@@ -44,3 +44,9 @@
     url
     ;; Default to https
     (str "https://" url)))
+
+(comment
+  (etaoin/with-chrome-headless {} chrome
+    (etaoin/go chrome "https://www.sephora.sg/store-locations")
+    (etaoin/get-source chrome))
+  )
