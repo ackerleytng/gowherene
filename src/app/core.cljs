@@ -127,6 +127,12 @@
    (clj->js {:content (rs/render-to-static-markup [infowindow-content header content])})))
 
 (defn gmap-marker
+  "Add a marker to a google maps object (map-object)
+
+  `latlng` is the coordinates of the map point (google.maps.LatLng)
+  `label` is the little number that appears on the map marker provided by google maps, can be nil
+  `title` is the heading for this map marker, which appears when clicked
+  `content` is the content of this map marker, which appears when clicked"
   [map-object latlng label title content]
   (let [marker (js/google.maps.Marker.
                 (clj->js {:position latlng
@@ -146,9 +152,9 @@
 
 (defn do-build-marker
   [map-object {:keys [label location latlng]}]
-  (when label
-    (let [index (get (re-find #"^\s*(\d+)" label) 1)]
-      (gmap-marker map-object (gmap-latlng latlng) index label location))))
+  (let [index (when label (second (re-find #"^\s*(\d+)" label)))
+        latlng (gmap-latlng latlng)]
+    (gmap-marker map-object latlng index label location)))
 
 (defn do-plot!
   [map-object markers-atom data]
