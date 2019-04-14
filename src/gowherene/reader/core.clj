@@ -106,6 +106,15 @@
        (pmap add-latlng)
        (map #(update % :loc zip/node))
        )
+
+  (->> page
+       hickory-zipper
+       cleanup
+       geocodables
+       (map #(dissoc % :loc))
+       (filter #(= :labelled (:type %))))
+
+
   )
 
 

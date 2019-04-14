@@ -1,4 +1,4 @@
-(ns app.core
+(ns frontend.core
   (:require [reagent.core :as r]
             [reagent.dom.server :as rs]
             [ajax.core :refer [GET]]
