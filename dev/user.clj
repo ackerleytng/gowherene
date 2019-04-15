@@ -30,6 +30,7 @@
   (def page (slurp "data/files/cheap-food-orchard.html"))
   (def page (slurp "data/files/11-budget-buffets-in-singapore-20-and-below.html"))
   (def page (slurp "data/files/dim-sum-restaurants-singapore.html"))
+  (def page (slurp "data/files/no-gst-restaurants.html"))
   (def page (slurp "data/files/snippets-the-best-buffets-in-singapore-the-definitive-guide-because-you-shouldnt-waste-your-calories-and-moolah.html"))
 
   (->> page

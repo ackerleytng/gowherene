@@ -81,13 +81,13 @@
                                   last  ;; This is the loc of "hello"
                                   label)))
     (is (= "Edge" (->> (hickory-zip (hiccup-to-hickory
-                               [[:body [:p {:style "text-align: justify;"}
-                                        [:strong "Edge \n"]]
-                                 [:p "hello"]]]))
-                 (iterate zip/next)
-                 (take 9)
-                 last  ;; This is the loc of "hello"
-                 label))))
+                                     [[:body [:p {:style "text-align: justify;"}
+                                              [:strong "Edge \n"]]
+                                       [:p "hello"]]]))
+                       (iterate zip/next)
+                       (take 9)
+                       last  ;; This is the loc of "hello"
+                       label))))
   (testing "label when there isn't an earlier header"
     (is (nil? (->> (hickory-zip (hiccup-to-hickory [[:p "hello"]]))
                    (iterate zip/next)

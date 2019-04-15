@@ -4,7 +4,8 @@
             [gowherene.reader.regexes
              :refer [re-postal-code
                      re-label
-                     re-spaces]]))
+                     re-spaces]]
+            [gowherene.reader.utils :refer [subtree content]]))
 
 (defn- node-contains-postal-code?
   [loc]
@@ -31,13 +32,17 @@
       (string/replace re-spaces " ")
       string/trim))
 
+(defn labelled-info
+  [loc]
+  {:loc loc :type :labelled :value (remove-label (content (subtree loc)))})
+
 (defn find-labelled
   [page-zipper]
   (->> page-zipper
        (iterate zip/next)
        (take-while (complement zip/end?))
        (filter node-contains-label?)
-       (map (fn [loc] {:loc loc :type :labelled :value (remove-label (zip/node loc))}))))
+       (map labelled-info)))
 
 (defn geocodables
   [page-zipper]

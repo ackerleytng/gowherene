@@ -1,7 +1,11 @@
 (ns gowherene.reader.location-test
   (:require [clojure.test :refer :all]
+            [clojure.zip :as zip]
+            [hickory.zip :refer [hickory-zip]]
+            [hickory.convert :refer [hiccup-to-hickory]]
             [gowherene.reader.location :refer :all]
-            [gowherene.reader.road-name :refer [road-name]]))
+            [gowherene.reader.road-name :refer [road-name]]
+            [gowherene.reader.geocodables :refer [labelled-info]]))
 
 (deftest test-postal-code
   (testing "postal-code"
@@ -199,3 +203,27 @@
        :unit-number "#04-01"
        :road-name "Maritime Square"
        :building-number "1"})))
+
+(deftest test-handle-labelled
+  (testing "that when address info cannot be found, handle-labelled will go a level up"
+    (let [address-loc (->> (hickory-zip
+                            (hiccup-to-hickory
+                             [[:p [:strong {:style "line-height: 1.3em;"}
+                                   [:span {:style "color: #d47978;"} "Address:"]
+                                   [:span {:style "line-height: 1.3em;"}
+                                    "&nbsp;273 Jalan Kayu, Singapore 7995"]]]]))
+                           (iterate zip/next)
+                           (take 8)
+                           last)
+          input (labelled-info address-loc)]
+      (is (= {:type :labelled, :value ""}
+             (dissoc input :loc))
+          "Sanity check to make sure labelled-info works")
+      (is (= {:type :labelled,
+              :value "273 Jalan Kayu, Singapore 7995",
+              :location
+              {:postal-code nil,
+               :unit-number nil,
+               :road-name "Jalan Kayu",
+               :building-number "273"}}
+             (dissoc (handle-labelled input) :loc))))))
