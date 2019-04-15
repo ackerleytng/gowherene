@@ -250,60 +250,43 @@
       "data/files/tiffany-singapore.html"
       '({:type :postal-code, :value "238872", :location "Ngee Ann City 238872", :label "Ngee Ann City"} {:type :postal-code, :value "238801", :location "Singapore 238801", :label "Singapore"} {:type :postal-code, :value "819643", :location "Singapore 819643", :label "Singapore"} {:type :postal-code, :value "819663", :location "Singapore 819663", :label "Singapore"} {:type :postal-code, :value "018972", :location "Singapore 018972", :label "Singapore"} {:type :postal-code, :value "098269", :location "Singapore 098269", :label "Singapore"} {:type :postal-code, :value "228220", :location "Singapore 228220", :label "Singapore"}))))
 
+(defn get-index
+  [header]
+  (and
+   header
+   (when-let [num (re-find #"(\d+)\." header)]
+     (Integer/parseInt (get num 1)))))
+
+(deftest integration-test-cheap-food-orchard
+  (testing "cheap-food-orchard"
+    (let [page (slurp "data/files/cheap-food-orchard.html")
+          response (process page)]
+      (is (= 23 (count response))
+          "Check number of items parsed")
+      (is (= 0 (count (filter (comp nil? :latlng) response)))
+          "All the latlngs after processing were geocoded")
+      (is (= (range 1 23)
+             (sort (->> response
+                        (map (comp get-index :label))
+                        (filter identity))))
+          "All headers were parsed, beginning from 1. to 22. (23rd one is a bonus)"))))
+
+(deftest integration-test-cheap-food-orchard
+  (testing "no-gst-restaurants"
+    (let [page (slurp "data/files/no-gst-restaurants.html")
+          response (process page)]
+      (is (= 18 (count response))
+          "Check number of items parsed")
+      (is (= 0 (count (filter (comp nil? :latlng) response)))
+          "All the latlngs after processing were geocoded")
+      (is (= (range 1 19)
+             (sort (->> response
+                        (map (comp get-index :label))
+                        (filter identity))))
+          "All headers were parsed, beginning from 1. to 18."))))
+
 (comment
-  (deftest test-retain-longer-names
-    (testing "retain longer names"
-      (is (= [{:place "Unrelated"
-               :address "address"}
 
-              {:place "Weirdzzzz"
-               :address "address"}
-
-              {:place "Totally Different"
-               :address "address"}
-              {:place "Short Name Longer Complete"
-               :address "address"}]
-             (retain-longer-names [{:place "Unrelated"
-                                    :address "address"}
-                                   {:place "Weirdzzzz"
-                                    :address "address"}
-                                   {:place "Short Name"
-                                    :address "address"}
-                                   {:place "Short Name Longer"
-                                    :address "address"}
-                                   {:place "Totally Different"
-                                    :address "address"}
-                                   {:place "Short Name Longer Complete"
-                                    :address "address"}])))))
-
-  (deftest test-reader-cheap-food-orchard
-    (testing "cheap-food-orchard"
-      (let [page (slurp "test/gowherene/reader/fixtures/cheap-food-orchard")
-            response (process page)]
-
-        ;; There are 23 items parsed
-        (is (= (count response) 23))
-
-        ;; There are 23 postal codes
-        (is (= (count (filter (comp (partial re-find re-postal-code) :address) response)) 23))
-
-        ;; All the latlngs after processing were geocoded
-        (is (= (count (filter (comp nil? :latlng) response)) 0))
-
-        ;; All headers were parsed, beginning from 1. to 22.
-        ;;   (The 23rd one is a "Bonus")
-        ;;   (Ensures no missing headers)
-        (is (= (sort (->> response
-                          (map :place)
-                          (map get-index)
-                          (filter identity)))
-               (range 1 23)))
-
-        ;; All addresses contain postal codes (true for this site)
-        (is (= 23 (->> response
-                       (map :address)
-                       (map #(re-find re-postal-code %))
-                       count))))))
 
   (deftest test-reader-no-gst-restaurants
     (testing "no-gst-restaurants"
@@ -525,7 +508,7 @@
   (let [files ["data/files/11-budget-buffets-in-singapore-20-and-below.html"
                "data/files/affordable-seafood-buffets.html"
                "data/files/best-burgers.html"
-               "data/files/cheap-food-orchard.html"
+               "data/files/no-gst-restaurants.html"
                "data/files/cheap-orchard-buffets.html"
                "data/files/dim-sum-restaurants-singapore.html"
                "data/files/local-breakfast-east-singapore.html"
