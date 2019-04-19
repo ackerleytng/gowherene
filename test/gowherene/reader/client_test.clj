@@ -18,4 +18,4 @@
     (is (= "http://www.google.com" (maybe-prefix-url "http://www.google.com")))
     (is (= "ftp://www.ftp.com" (maybe-prefix-url "ftp://www.ftp.com")))
     (is (= "https://www.https.com" (maybe-prefix-url "https://www.https.com")))
-    (is (= "http://www.test.com" (maybe-prefix-url "www.test.com")))))
+    (is (= "https://www.test.com" (maybe-prefix-url "www.test.com")))))
