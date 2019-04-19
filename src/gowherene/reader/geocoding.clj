@@ -1,5 +1,6 @@
 (ns gowherene.reader.geocoding
-  (:require [clj-http.client :as client]
+  (:require [clojure.string :as str]
+            [clj-http.client :as client]
             [environ.core :refer [env]]
             [clojure.data.json :as json]
             [gowherene.reader.regexes :refer [re-postal-code]]))
@@ -42,39 +43,46 @@
        (println (str "Over query limit while geocoding '" address "'"))))))
 
 (defn- raw-geocode-onemap
-  [postal-code]
+  [address]
   (let [{:keys [status body]} (client/get
                                "https://developers.onemap.sg/commonapi/search"
                                {:throw-exceptions false
-                                :query-params {:searchVal postal-code
+                                :query-params {:searchVal address
                                                :returnGeom "Y"
                                                :getAddrDetails "Y"}})]
     (if (not (= 200 status))
-      {:error (str "Onemap geocoding returned " status " for '" postal-code "'") :data nil}
+      {:error (str "Onemap geocoding returned " status " for '" address "'") :data nil}
       {:error nil :data (json/read-json body)})))
 
 (defn geocode-onemap
-  [postal-code]
+  [address]
   (let [{error :error
          {:keys [found results]} :data
-         :as output} (raw-geocode-onemap postal-code)]
+         :as output} (raw-geocode-onemap address)]
     (when (and found (pos? found))
       (let [result (get results 0)]
         {:lat (Float/parseFloat (:LATITUDE result))
          :lng (Float/parseFloat (:LONGITUDE result))}))))
 
-(defn add-latlng
-  [{:keys [type value] :as input}]
-  (case type
-    :postal-code
-    (assoc input :latlng (geocode-onemap value))
-    nil))
+(defn render-location
+  [{:keys [postal-code road-name building-number]}]
+  (str/join
+   " "
+   [(or building-number "")
+    (or road-name "")
+    (or postal-code "")]))
 
 (defn geocode
-  [address]
-  (when address
-    (if-let [postal-code (re-find re-postal-code address)]
-      (or (geocode-onemap postal-code)
-          ;; Fallback to google
-          (geocode-google address))
-      (geocode-google address))))
+  [search-key]
+  (or (geocode-onemap search-key)
+      (geocode-google search-key)))
+
+(defn add-latlng
+  [{:keys [type value location] :as input}]
+  (if-let [search-key
+           (case type
+             :postal-code value
+             :labelled (render-location location)
+             nil)]
+    (assoc input :latlng (geocode search-key))
+    input))
