@@ -37,10 +37,10 @@
    (let [parts (address-parts value)]
      (cond
        ;; Can find address parts, yay!
-       (not (every? nil? (vals parts)))
+       (some identity (vals parts))
        (assoc input :location parts)
        ;; Can't find, try upper level
-       (< levels-traversed 2)
+       (< levels-traversed 3)
        (recur (labelled-info (zip/up loc)) (inc levels-traversed))
        ;; Went up so many levels already, so give up searching
        :else input))))
