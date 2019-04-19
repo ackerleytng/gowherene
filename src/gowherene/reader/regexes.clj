@@ -6,13 +6,12 @@
      (74 is not a valid prefix, but it is included in this regex)"
   #"\b(?:[0-7][0-9]|8[0-3])\d{4}\b")
 
-(def re-address
-  "Regex to match for address labels in text"
-  #"[Aa]ddress:?")
+(def re-label-s
+  "(?:[Ww]here|[Aa]ddress)\\s*:")
 
 (def re-label
   "Regex to match labels in nodes"
-  #"(?i)\b(?:where|address)\s*:")
+  (re-pattern re-label-s))
 
 (def re-spaces
   "Regex to be used to replace all &nbsp;s as well as spaces"

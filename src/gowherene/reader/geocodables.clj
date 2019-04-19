@@ -4,6 +4,7 @@
             [gowherene.reader.regexes
              :refer [re-postal-code
                      re-label
+                     re-label-s
                      re-spaces]]
             [gowherene.reader.utils :refer [subtree content]]))
 
@@ -23,12 +24,12 @@
 (defn- node-contains-label?
   [loc]
   (let [node (zip/node loc)]
-    (and (string? node) (re-find re-label node))))
+    (and (string? node) (re-find re-label node) (not (re-find #"(?i)email\s+address" node)))))
 
 (defn- remove-label
   [string]
   (-> string
-      (string/replace re-label "")
+      (string/replace (re-pattern (str ".*" re-label-s)) "")
       (string/replace re-spaces " ")
       string/trim))
 
