@@ -2,3 +2,7 @@
   height: 50vw;
   width: 100%;
 }
+
+.space-out-top {
+  margin-top: 1rem;
+}

@@ -1,11 +1,12 @@
 (ns frontend.utils.recommendations)
 
 (defn handle-recommendations
-  [existing action data]
+  [existing action url data]
   (.log js/console (clj->js {:existing existing
                              :action action
                              :data data}))
-  (case action
-    :append (concat existing data)
-    :plot data
-    existing))
+  (let [new (map #(assoc % :url url) data)]
+    (case action
+      :append (concat existing new)
+      :plot new
+      existing)))

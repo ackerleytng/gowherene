@@ -56,8 +56,8 @@
    (dissoc
     (if error
       (assoc db :error-message error)
-      (update db :recommendations handle-recommendations (:loading-action db) data))
-    :loading-action)))
+      (update db :recommendations handle-recommendations (:loading-action db) (:url-input db) data))
+    :loading-action :url-input)))
 
 (re-frame/reg-event-db
  ::parse-failure
@@ -65,3 +65,10 @@
    (dissoc
     (assoc db :error-message "Couldn't read your URL :(")
     :loading-action)))
+
+(re-frame/reg-event-db
+ ::remove-url
+ (fn [db [_ url]]
+   (let [recs (:recommendations db)
+         removed (remove #(= url (:url %)) recs)]
+     (assoc db :recommendations removed))))

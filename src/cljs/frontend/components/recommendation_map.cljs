@@ -41,13 +41,14 @@
         to-add              (set/difference recommendations-set existing-recs-set)
         to-remove           (set/difference existing-recs-set recommendations-set)]
     (doseq [r to-remove]
-      (.setMap (r pairs) nil)
+      (.setMap (get pairs r) nil)
       (swap! pairs-atom dissoc r))
     (doseq [r to-add]
       (let [m (marker gmap r)]
         (swap! pairs-atom assoc r m)))
     (let [latlngs (map (comp gmap-latlng :latlng) (keys @pairs-atom))
-          bounds (gmap-latlng-bounds latlngs)]
+          bounds (or (gmap-latlng-bounds latlngs)
+                     singapore-bounds)]
       (.fitBounds gmap bounds))))
 
 (defn gmap []
@@ -75,5 +76,5 @@
 
 (defn recommendation-map []
   (let [recommendations @(re-frame/subscribe [::subs/recommendations])]
-    [:div.container.is-widescreen
+    [:div.container.is-widescreen.space-out-top
      [gmap {:recommendations recommendations}]]))

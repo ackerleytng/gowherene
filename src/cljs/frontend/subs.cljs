@@ -47,6 +47,11 @@
    (:recommendations db)))
 
 (re-frame/reg-sub
+ ::url-list
+ (fn [db _]
+   (into #{} (map :url (:recommendations db)))))
+
+(re-frame/reg-sub
  ::append-loading
  (fn [db _]
    (when (= :append (:loading-action db)) "is-loading")))

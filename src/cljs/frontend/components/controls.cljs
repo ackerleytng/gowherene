@@ -48,7 +48,7 @@
      [append-button]]))
 
 (defn controls []
-  [:div#controls
+  [:div#controls.space-out-top
    [:div.field.has-addons
     [:div.control.is-expanded
      [url-input]]
