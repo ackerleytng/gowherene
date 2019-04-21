@@ -378,10 +378,7 @@
                {5 1}
                {6 1}
                {7 1}
-               ;; TODO this should really be {8 4} -
-               ;;   I think when it goes up levels to detect location
-               ;;   it's dropping one by accident
-               {8 3}
+               {8 4}
                {9 1}
                {10 1}
                {11 1}
