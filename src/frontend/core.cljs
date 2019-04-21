@@ -157,7 +157,7 @@
    [(or building-number "")
     (or road-name "")
     (or unit-number "")
-    (or (str "S(" postal-code ")") "")]))
+    (if postal-code (str "S(" postal-code ")") "")]))
 
 (defn do-build-marker
   [map-object {:keys [label location latlng]}]
