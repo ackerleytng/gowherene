@@ -18,14 +18,17 @@
             :font-family "'Roboto', sans-serif !important"}
     :on-click #(re-frame/dispatch [::events/set-about-active true])}
    [:div.container
-    [:div.columns.is-vcentered.is-mobile
+    [:div.columns.is-variable.is-2.is-vcentered.is-mobile
      [:div.column.is-narrow
       [:figure.image.is-64x64
        [:img {:src "img/gowherene.svg"}]]]
-     [:div.column.is-narrow
-      [:h1.title {:style {:font-weight "bold"}} [gowherene]]]
-     [:h2.subtitle.is-hidden-mobile
-      "map out your recommendations!"]]]])
+     [:div.column
+      [:div.columns
+       [:div.column.is-narrow
+        [:h1.title {:style {:font-weight "bold"}} [gowherene]]]
+       [:h2.subtitle.is-hidden-mobile
+        {:style {:margin-top "1.3rem"}}
+        "map out your recommendations!"]]]]]])
 
 (defn footer []
   [:footer.footer
