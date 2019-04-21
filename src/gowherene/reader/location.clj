@@ -33,7 +33,7 @@
 
 (defn handle-labelled
   ([input] (handle-labelled input 0))
-  ([{:keys [value loc] :as input} levels-traversed]
+  ([{:keys [value loc trimmed-loc] :as input} levels-traversed]
    (let [parts (address-parts value)]
      (cond
        ;; Can find address parts, yay!
@@ -41,7 +41,7 @@
        (assoc input :location parts)
        ;; Can't find, try upper level
        (< levels-traversed 3)
-       (recur (labelled-info (zip/up loc)) (inc levels-traversed))
+       (recur (labelled-info (zip/up loc) (zip/up (or trimmed-loc loc))) (inc levels-traversed))
        ;; Went up so many levels already, so give up searching
        :else input))))
 

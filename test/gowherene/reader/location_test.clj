@@ -227,7 +227,7 @@
                :unit-number nil,
                :road-name "Jalan Kayu",
                :building-number "273"}}
-             (dissoc (handle-labelled input) :loc))))))
+             (dissoc (handle-labelled input) :loc :trimmed-loc))))))
 
 (deftest test-handle-labelled-3-levels-up
   (testing "that when address info cannot be found, handle-labelled will go 3 levels up"
@@ -251,4 +251,43 @@
                :unit-number nil,
                :road-name "Jalan Kayu",
                :building-number "273"}}
-             (dissoc (handle-labelled input) :loc))))))
+             (dissoc (handle-labelled input) :loc :trimmed-loc))))))
+
+(deftest test-handle-labelled-grouped
+  (testing "handle-labelled works when grouped"
+    (let [subtree (hickory-zip
+                   (hiccup-to-hickory
+                    [[:p
+                      "Thomson Branch"
+                      [:br]
+                      [:strong {:style "line-height: 1.3em;"}
+                       [:strong {:style "color: #d47978;"} "Address:"]
+                       "&nbsp;"]
+                      "187 Upper Thomson Road"
+                      [:br]
+                      [:strong {:style "color: #d47978;"} "Opening Hours:"]
+                      [:strong "&nbsp;"]
+                      "Mon to Thurs: 4pm - 12am |&nbsp;Fri to Sun: 12pm - 12am"
+                      [:br]
+                      [:br]
+                      "Katong Branch"
+                      [:br]
+                      [:span {:style "color: #d47978;"}
+                       [:strong "Address:"]]
+                      " 465 Joo Chiat Road"
+                      [:br]
+                      [:strong {:style "color: #d47978;"} "Opening Hours:"]
+                      [:strong "&nbsp;"]
+                      "Mon to Thurs: 4pm - 12am |&nbsp;Fri to Sun: 12pm - 12am"]]))
+          address-loc (->> subtree
+                           (iterate zip/next)
+                           (take 10)
+                           last)
+          input (labelled-info address-loc)]
+      (is (= {:type :labelled,
+              :location
+              {:postal-code nil,
+               :unit-number nil,
+               :road-name "Upper Thomson Road",
+               :building-number "187"}}
+             (dissoc (handle-labelled input) :loc :value :trimmed-loc))))))
