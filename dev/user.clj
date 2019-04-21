@@ -99,13 +99,13 @@
        (map add-location)
        (map add-label)
        (pmap add-latlng)
-       (map #(update % :loc zip/node))       )
+       (map #(dissoc % :loc :trimmed-loc)))
 
   (->> page
        hickory-zipper
        cleanup
        process-clean-zipper
-       (map #(dissoc % :loc))
+       (map #(dissoc % :loc :trimmed-loc))
        (group-by :label)
        (map (fn [[k v]] [(get-index k) v]))
        sort
@@ -120,8 +120,7 @@
        cleanup
        process-clean-zipper
        remove-duplicates
-       (map #(update % :loc zip/node))
-       )
+       (map #(dissoc % :loc :trimmed-loc)))
 
   (def zzz (process page))
   (->> zzz
