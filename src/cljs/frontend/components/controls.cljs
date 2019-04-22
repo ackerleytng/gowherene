@@ -17,24 +17,24 @@
 
 (defn clear-button []
   [:a#clear.button
+   {:on-click #(re-frame/dispatch [::events/set-url-input ""])}
    [:span.icon.is-small.has-text-grey-light
-    {:on-click #(re-frame/dispatch [::events/set-url-input ""])}
     [:i.fas.fa-times]]])
 
 (defn append-button []
   (let [class @(re-frame/subscribe [::subs/append-loading])]
     [:a#append.button.is-info
-     {:class class}
+     {:class class
+      :on-click #(re-frame/dispatch [::events/parse-url :append])}
      [:span.icon
-      {:on-click #(re-frame/dispatch [::events/parse-url :append])}
       [:i.fas.fa-angle-double-right]]]))
 
 (defn plot-button []
   (let [class @(re-frame/subscribe [::subs/plot-loading])]
     [:a#plot.button.is-info
-     {:class class}
+     {:class class
+      :on-click #(re-frame/dispatch [::events/parse-url :plot])}
      [:span.icon
-      {:on-click #(re-frame/dispatch [::events/parse-url :plot])}
       [:i.fas.fa-angle-right]]]))
 
 (defn clear-button-placeholder []
