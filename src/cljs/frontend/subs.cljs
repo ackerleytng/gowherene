@@ -36,20 +36,18 @@
 (re-frame/reg-sub
  ::show-append-button
  (fn [db _]
-   (let [plotted-urls (->> (:recommendations db)
-                           (map :url)
-                           (into #{}))]
+   (let [plotted-urls (keys (:results db))]
      (> (count plotted-urls) 0))))
 
 (re-frame/reg-sub
  ::recommendations
  (fn [db _]
-   (:recommendations db)))
+   (apply concat (vals (:results db)))))
 
 (re-frame/reg-sub
  ::url-list
  (fn [db _]
-   (into #{} (map :url (:recommendations db)))))
+   (keys (:results db))))
 
 (re-frame/reg-sub
  ::append-loading

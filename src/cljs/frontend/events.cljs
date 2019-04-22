@@ -3,8 +3,7 @@
    [ajax.core :as ajax]
    [re-frame.core :as re-frame]
    [day8.re-frame.tracing :refer-macros [fn-traced defn-traced]]
-   [frontend.db :as db]
-   [frontend.utils.recommendations :refer [handle-recommendations]]))
+   [frontend.db :as db]))
 
 (re-frame/reg-event-db
  ::initialize-db
@@ -50,13 +49,23 @@
                 :on-success      [::parse-success]
                 :on-failure      [::parse-failure]}}))
 
+(defn- handle-results
+  [existing action url data]
+  (.log js/console #js {:existing existing
+                        :action action
+                        :data data})
+  (case action
+    :append (assoc existing url data)
+    :plot {url data}
+    existing))
+
 (re-frame/reg-event-db
  ::parse-success
  (fn [db [_ {:keys [error data]}]]
    (dissoc
     (if error
       (assoc db :error-message error)
-      (update db :recommendations handle-recommendations (:loading-action db) (:url-input db) data))
+      (update db :results handle-results (:loading-action db) (:url-input db) data))
     :loading-action :url-input)))
 
 (re-frame/reg-event-db
@@ -69,6 +78,4 @@
 (re-frame/reg-event-db
  ::remove-url
  (fn [db [_ url]]
-   (let [recs (:recommendations db)
-         removed (remove #(= url (:url %)) recs)]
-     (assoc db :recommendations removed))))
+   (update db :results dissoc url)))

@@ -2,4 +2,4 @@
 
 (def default-db
   {:url-input ""
-   :recommendations []})
+   :results {}})
