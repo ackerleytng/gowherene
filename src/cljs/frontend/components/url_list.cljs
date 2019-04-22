@@ -8,7 +8,7 @@
    [:span.panel-icon
     {:on-click #(re-frame/dispatch [::events/remove-url url])}
     [:i.fas.fa-times-circle]]
-   [:a {:href url} url]])
+   [:a {:style {:overflow "hidden"} :href url} url]])
 
 (defn url-list []
   (let [url-list @(re-frame/subscribe [::subs/url-list])]
