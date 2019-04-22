@@ -4,7 +4,6 @@
    [re-frame.core :as re-frame]
    [day8.re-frame.http-fx]
    [frontend.events :as events]
-   [frontend.routes :as routes]
    [frontend.views :as views]
    [frontend.config :as config]))
 
@@ -20,7 +19,6 @@
                   (.getElementById js/document "app")))
 
 (defn ^:export init []
-  (routes/frontend-routes)
   (re-frame/dispatch-sync [::events/initialize-db])
   (dev-setup)
   (mount-root))

@@ -27,10 +27,7 @@
                  [reagent "0.8.1"]
                  [re-frame "0.10.6"]
                  [day8.re-frame/http-fx "0.1.6"]
-                 [clj-commons/secretary "1.2.4"]
                  [cljsjs/google-maps "3.18-1"]
-
-                 [cljs-ajax "0.8.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [com.cemerick/url "0.1.1"]]
   :plugins [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
   :source-paths ["src/clj" "src/cljs"]
