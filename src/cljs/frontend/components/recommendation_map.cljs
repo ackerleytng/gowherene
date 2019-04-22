@@ -59,8 +59,8 @@
       :component-did-mount
       (fn [this]
         (let [map-canvas (r/dom-node this)
-              map-options (clj->js {:disableDefaultUI true
-                                    :zoomControl true})
+              map-options #js {:disableDefaultUI true
+                               :zoomControl true}
               gmap (js/google.maps.Map. map-canvas map-options)]
           (reset! gmap-atom gmap)
           (.fitBounds gmap singapore-bounds)))
