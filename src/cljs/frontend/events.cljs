@@ -1,9 +1,11 @@
 (ns frontend.events
   (:require
+   [clojure.set :as set]
    [ajax.core :as ajax]
    [re-frame.core :as re-frame]
    [day8.re-frame.tracing :refer-macros [fn-traced defn-traced]]
-   [frontend.db :as db]))
+   [frontend.db :as db]
+   [frontend.query :refer [addr-bar-urls set-addr-bar-urls!]]))
 
 (re-frame/reg-event-db
  ::initialize-db
@@ -36,46 +38,99 @@
   (assoc db :url-input value)))
 
 (re-frame/reg-event-fx
- ::parse-url
- (fn-traced
-  [{:keys [db]} [_ action]]
-  {:db         (assoc db :loading-action action)
-   :http-xhrio {:method          :get
-                :uri             "/parse"
-                ;; TODO handle when :url-input is blank
-                :params          {:url (:url-input db)}
-                :timeout         15000
-                :response-format (ajax/json-response-format {:keywords? true})
-                :on-success      [::parse-success]
-                :on-failure      [::parse-failure]}}))
-
-(defn- handle-results
-  [existing action url data]
-  (.log js/console #js {:existing existing
-                        :action action
-                        :data data})
-  (case action
-    :append (assoc existing url data)
-    :plot {url data}
-    existing))
-
-(re-frame/reg-event-db
  ::parse-success
- (fn [db [_ {:keys [error data]}]]
-   (dissoc
-    (if error
-      (assoc db :error-message error)
-      (update db :results handle-results (:loading-action db) (:url-input db) data))
-    :loading-action :url-input)))
+ (fn-traced
+  [{:keys [db]} [_ url action {:keys [error data]}]]
+  {:db (dissoc
+        (if error
+          (assoc db :error-message error)
+          ;; Always add to results
+          ;; When urls are replaced, either from clicking on plot or from addr-bar,
+          ;;   removal is handled by ::replace-urls
+          (update db :results assoc url data))
+        :loading-action)
+   ::addr-bar-add-url url}))
 
 (re-frame/reg-event-db
  ::parse-failure
- (fn [db [_ {:keys [error data]}]]
-   (dissoc
-    (assoc db :error-message "Couldn't read your URL :(")
-    :loading-action)))
+ (fn-traced
+  [db [_ {:keys [error data]}]]
+  (dissoc
+   (assoc db :error-message "Couldn't read your URL :(")
+   :loading-action)))
 
-(re-frame/reg-event-db
+;; Effects for url handling in address bar
+
+(re-frame/reg-fx
+ ;; Only add one at a time, because we only add if it was successfully parsed
+ ;;   and parsing is only done one at a time
+ ::addr-bar-add-url
+ (fn-traced
+  [url]
+  (let [existing (addr-bar-urls)
+        new (conj existing url)]
+    (set-addr-bar-urls! new))))
+
+(re-frame/reg-fx
+ ;; Removing urls is always successful, so just remove in bulk
+ ::addr-bar-remove-urls
+ (fn-traced
+  [urls]
+  (let [existing (addr-bar-urls)
+        new (remove (set urls) existing)]
+    (.log js/console {::addr-bar-remove-urls [urls (set urls) new existing]})
+    (set-addr-bar-urls! new))))
+
+;; Events for url handling
+
+(re-frame/reg-event-fx
+ ;; This event should not be dispatched to from any components.
+ ;; Instead dispatch to one of
+ ;;   add-url
+ ;;   remove-url
+ ;;   replace-urls
+ ::-parse-url
+ (fn-traced
+  [{:keys [db]} [_ url]]
+  {:db         (assoc db :loading-action :plot)  ;; TODO remove hard-coding to plot
+   :http-xhrio {:method          :get
+                :uri             "/parse"
+                :params          {:url url}
+                :timeout         15000
+                :response-format (ajax/json-response-format {:keywords? true})
+                :on-success      [::parse-success url :plot]  ;; TODO remove hard-coding to plot
+                :on-failure      [::parse-failure]}}))
+
+(re-frame/reg-event-fx
+ ::add-url
+ (fn-traced
+  [{:keys [db]} [_]]
+  (let [url (:url-input db)
+        db-changes {:db (dissoc db :url-input)}]
+    (if (get-in db [:results url])
+      ;; Already present in results, no changes required
+      db-changes
+      ;; Wasn't in results, do parsing
+      (assoc
+       db-changes
+       :dispatch [::-parse-url url])))))
+
+(re-frame/reg-event-fx
  ::remove-url
- (fn [db [_ url]]
-   (update db :results dissoc url)))
+ (fn-traced
+  [{:keys [db]} [_ url]]
+  {:db (update db :results dissoc url)
+   ::addr-bar-remove-urls [url]}))
+
+(re-frame/reg-event-fx
+ ::replace-urls
+ (fn-traced
+  [{:keys [db]} [_ urls]]
+  (let [existing (set (keys (:results db)))
+        new (if (= :from-url-input urls) #{(:url-input db)} (set urls))
+        to-add (set/difference new existing)
+        to-remove (set/difference existing new)
+        db-after-removal (update db :results #(apply dissoc % to-remove))]
+    {:db (if (= :from-url-input urls) (dissoc db-after-removal :url-input) db-after-removal)
+     :dispatch-n (map (fn [url] [::-parse-url url]) to-add)
+     ::addr-bar-remove-urls to-remove})))

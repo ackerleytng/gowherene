@@ -25,7 +25,7 @@
   (let [class @(re-frame/subscribe [::subs/append-loading])]
     [:a#append.button.is-info
      {:class class
-      :on-click #(re-frame/dispatch [::events/parse-url :append])}
+      :on-click #(re-frame/dispatch [::events/add-url])}
      [:span.icon
       [:i.fas.fa-angle-double-right]]]))
 
@@ -33,7 +33,7 @@
   (let [class @(re-frame/subscribe [::subs/plot-loading])]
     [:a#plot.button.is-info
      {:class class
-      :on-click #(re-frame/dispatch [::events/parse-url :plot])}
+      :on-click #(re-frame/dispatch [::events/replace-urls :from-url-input])}
      [:span.icon
       [:i.fas.fa-angle-right]]]))
 

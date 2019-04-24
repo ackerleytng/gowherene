@@ -49,6 +49,10 @@
  (fn [db _]
    (keys (:results db))))
 
+;; TODO should replace different types of loading with only one type
+;;   means that ::parse-success must not blindly unset loading,
+;;   since there can be more than one url parsed at the backend
+
 (re-frame/reg-sub
  ::append-loading
  (fn [db _]
