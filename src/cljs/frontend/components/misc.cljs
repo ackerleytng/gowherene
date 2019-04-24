@@ -91,3 +91,15 @@
      [:button.modal-close.is-large
       {:aria-label "close"
        :on-click #(re-frame/dispatch [::events/set-error-message nil])}]]))
+
+(defn spinner-modal []
+  (let [spinner-modal-class @(re-frame/subscribe [::subs/spinner-modal-class])]
+    [:div#spinner.modal
+     {:class spinner-modal-class}
+     [:div.modal-background]
+     [:div.modal-content
+      {:style {:overflow "hidden"}}
+      [:div.columns.is-mobile.is-centered
+       [:div.column.is-narrow
+        [:p.image.is-128x128
+         [:img {:src "img/spinner.svg"}]]]]]]))

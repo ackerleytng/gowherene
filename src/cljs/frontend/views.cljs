@@ -1,6 +1,6 @@
 (ns frontend.views
   (:require
-   [frontend.components.misc :refer [header about-modal error-modal footer]]
+   [frontend.components.misc :refer [header spinner-modal about-modal error-modal footer]]
    [frontend.components.controls :refer [controls]
     :rename {controls c-controls}]
    [frontend.components.url-list :refer [url-list]
@@ -10,6 +10,7 @@
 
 (defn app []
   [:<>
+   [spinner-modal]
    [about-modal]
    [error-modal]
    [header]

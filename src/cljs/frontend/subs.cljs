@@ -19,6 +19,11 @@
    (when (:error-message db) "is-active")))
 
 (re-frame/reg-sub
+ ::spinner-modal-class
+ (fn [db _]
+   (when (pos? (count (:loading db))) "is-active")))
+
+(re-frame/reg-sub
  ::error-message
  (fn [db _]
    (:error-message db)))
@@ -48,17 +53,3 @@
  ::url-list
  (fn [db _]
    (keys (:results db))))
-
-;; TODO should replace different types of loading with only one type
-;;   means that ::parse-success must not blindly unset loading,
-;;   since there can be more than one url parsed at the backend
-
-(re-frame/reg-sub
- ::append-loading
- (fn [db _]
-   (when (= :append (:loading-action db)) "is-loading")))
-
-(re-frame/reg-sub
- ::plot-loading
- (fn [db _]
-   (when (= :plot (:loading-action db)) "is-loading")))

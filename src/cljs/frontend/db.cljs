@@ -2,4 +2,5 @@
 
 (def default-db
   {:url-input ""
-   :results {}})
+   :results {}
+   :loading []})

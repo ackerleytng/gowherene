@@ -40,24 +40,22 @@
 (re-frame/reg-event-fx
  ::parse-success
  (fn-traced
-  [{:keys [db]} [_ url action {:keys [error data]}]]
-  {:db (dissoc
-        (if error
-          (assoc db :error-message error)
-          ;; Always add to results
-          ;; When urls are replaced, either from clicking on plot or from addr-bar,
-          ;;   removal is handled by ::replace-urls
-          (update db :results assoc url data))
-        :loading-action)
-   ::addr-bar-add-url url}))
+  [{:keys [db]} [_ url {:keys [error data]}]]
+  (let [db-changes {:db (cond-> db
+                          error (assoc :error-message error)
+                          (not error) (update :results assoc url data)
+                          true (update :loading #(remove #{url} %)))}]
+    (if error
+      db-changes
+      (assoc db-changes ::addr-bar-add-url url)))))
 
 (re-frame/reg-event-db
  ::parse-failure
  (fn-traced
-  [db [_ {:keys [error data]}]]
-  (dissoc
-   (assoc db :error-message "Couldn't read your URL :(")
-   :loading-action)))
+  [db [_ url {:keys [error data]}]]
+  (-> db
+      (assoc :error-message "Couldn't read your URL :(")
+      (update :loading #(remove #{url} %)))))
 
 ;; Effects for url handling in address bar
 
@@ -93,14 +91,14 @@
  ::-parse-url
  (fn-traced
   [{:keys [db]} [_ url]]
-  {:db         (assoc db :loading-action :plot)  ;; TODO remove hard-coding to plot
+  {:db         (update db :loading conj url)
    :http-xhrio {:method          :get
                 :uri             "/parse"
                 :params          {:url url}
                 :timeout         15000
                 :response-format (ajax/json-response-format {:keywords? true})
-                :on-success      [::parse-success url :plot]  ;; TODO remove hard-coding to plot
-                :on-failure      [::parse-failure]}}))
+                :on-success      [::parse-success url]
+                :on-failure      [::parse-failure url]}}))
 
 (re-frame/reg-event-fx
  ::add-url
@@ -130,8 +128,9 @@
   (let [existing (set (keys (:results db)))
         new (if (= :from-url-input urls) #{(:url-input db)} (set urls))
         to-add (set/difference new existing)
-        to-remove (set/difference existing new)
-        db-after-removal (update db :results #(apply dissoc % to-remove))]
-    {:db (if (= :from-url-input urls) (dissoc db-after-removal :url-input) db-after-removal)
+        to-remove (set/difference existing new)]
+    {:db (cond-> db
+           true (update :results #(apply dissoc % to-remove))
+           (= :from-url-input urls) (dissoc :url-input))
      :dispatch-n (map (fn [url] [::-parse-url url]) to-add)
      ::addr-bar-remove-urls to-remove})))

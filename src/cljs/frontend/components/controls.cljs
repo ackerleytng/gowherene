@@ -22,20 +22,16 @@
     [:i.fas.fa-times]]])
 
 (defn append-button []
-  (let [class @(re-frame/subscribe [::subs/append-loading])]
-    [:a#append.button.is-info
-     {:class class
-      :on-click #(re-frame/dispatch [::events/add-url])}
-     [:span.icon
-      [:i.fas.fa-angle-double-right]]]))
+  [:a#append.button.is-info
+   {:on-click #(re-frame/dispatch [::events/add-url])}
+   [:span.icon
+    [:i.fas.fa-angle-double-right]]])
 
 (defn plot-button []
-  (let [class @(re-frame/subscribe [::subs/plot-loading])]
-    [:a#plot.button.is-info
-     {:class class
-      :on-click #(re-frame/dispatch [::events/replace-urls :from-url-input])}
-     [:span.icon
-      [:i.fas.fa-angle-right]]]))
+  [:a#plot.button.is-info
+   {:on-click #(re-frame/dispatch [::events/replace-urls :from-url-input])}
+   [:span.icon
+    [:i.fas.fa-angle-right]]])
 
 (defn clear-button-placeholder []
   (when-let [show-clear-button @(re-frame/subscribe [::subs/show-clear-button])]
