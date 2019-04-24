@@ -68,7 +68,9 @@
  (fn-traced
   [url]
   (let [existing (addr-bar-urls)
-        new (conj existing url)]
+        new (if (some #{url} existing)
+              existing
+              (conj existing url))]
     (set-addr-bar-urls! new))))
 
 (re-frame/reg-fx
@@ -78,7 +80,6 @@
   [urls]
   (let [existing (addr-bar-urls)
         new (remove (set urls) existing)]
-    (.log js/console {::addr-bar-remove-urls [urls (set urls) new existing]})
     (set-addr-bar-urls! new))))
 
 ;; Events for url handling
