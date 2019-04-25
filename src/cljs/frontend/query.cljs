@@ -23,7 +23,6 @@
                           (string/join "&"))
         prefix (when (not (string/blank? query-params)) "?")
         address (str (url-root) prefix query-params)]
-    (.log js/console {:set-addr-bar-urls! [urls address]})
     (history-push-state! address)))
 
 ;; Reading from address bar
