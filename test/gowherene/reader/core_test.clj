@@ -2,7 +2,6 @@
   (:require [clojure.test :refer :all]
             [clojure.pprint :refer [pprint]]
             [hickory.core :refer [as-hickory parse]]
-            [medley.core :refer [take-upto distinct-by]]
             [gowherene.reader.core :refer :all]
             [gowherene.reader.geocodables :refer [find-postal-codes]]
             [gowherene.reader.regexes :refer :all]))

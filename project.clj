@@ -16,10 +16,8 @@
                  [com.novemberain/monger "3.5.0" :exclusions [com.google.guava/guava]]
 
                  ;; For reader
-                 [medley "1.1.0"]
                  [clj-http "3.9.1"]
                  [xtreak/clj-http-ssrf "0.2.2"]
-                 [slingshot "0.12.2"]
                  [hickory "0.7.1"]
 
                  ;; For client-side
