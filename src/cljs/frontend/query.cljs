@@ -35,4 +35,4 @@
 (defn addr-bar-urls []
   (let [query-params (string/replace (.. js/window -location -search) #"^\?" "")]
     (if (string/blank? query-params) []
-        (map query->string (string/split query-params #"&")))))
+        (mapv query->string (string/split query-params #"&")))))
