@@ -37,27 +37,48 @@
   [db [_ value]]
   (assoc db :url-input value)))
 
+;; Result handlers
+
+(re-frame/reg-event-fx
+ ::assoc-results
+ (fn-traced
+  [{:keys [db]} [_ url data]]
+  {:db (update db :results assoc url data)
+   ::addr-bar-add-url url}))
+
+(re-frame/reg-event-fx
+ ::dissoc-results
+ (fn-traced
+  [{:keys [db]} [_ urls]]
+  {:db (update db :results #(apply dissoc % urls))
+   ::addr-bar-remove-urls urls}))
+
+;; Parsing result handler
+
 (re-frame/reg-event-fx
  ::parse-success
- (fn-traced
-  [{:keys [db]} [_ url {:keys [error data]}]]
-  (let [db-changes {:db (cond-> db
-                          error (assoc :error-message error)
-                          (not error) (update :results assoc url data)
-                          true (update :loading #(remove #{url} %)))}]
-    (if error
-      db-changes
-      (assoc db-changes ::addr-bar-add-url url)))))
+ (fn  ;; not tracing this - bug in re-frame-10x causes assert failure
+   [{:keys [db]} [_ url {:keys [error data]}]]
+   (let [effects {:db db}]
+     (cond-> (update-in effects [:db :loading] #(remove #{url} %))
+       error (assoc-in [:db :error-message] error)
+       (not error) (assoc :dispatch [::assoc-results url data])))))
 
 (re-frame/reg-event-db
  ::parse-failure
  (fn-traced
   [db [_ url {:keys [error data]}]]
   (-> db
-      (assoc :error-message "Couldn't read your URL :(")
-      (update :loading #(remove #{url} %)))))
+      (update :loading #(remove #{url} %))
+      (assoc :error-message "Couldn't read your URL :("))))
 
-;; Effects for url handling in address bar
+;; Url handling in address bar
+
+(re-frame/reg-cofx
+ :addr-bar-urls
+ (fn-traced
+  [coeffects _]
+  (assoc coeffects :addr-bar-urls (addr-bar-urls))))
 
 (re-frame/reg-fx
  ;; Only add one at a time, because we only add if it was successfully parsed
@@ -76,19 +97,26 @@
  ::addr-bar-remove-urls
  (fn-traced
   [urls]
-  (let [existing (addr-bar-urls)
-        new (remove (set urls) existing)]
-    (set-addr-bar-urls! new))))
+  (->> (addr-bar-urls)
+       (remove urls)
+       set-addr-bar-urls!)))
+
+(defn handle-proposed
+  "Helper function to compute parsing or removing of urls from proposed sets"
+  [{:keys [db] :as effects} proposed]
+  (let [existing (set (keys (:results db)))
+        to-add (set/difference proposed existing)
+        to-remove (set/difference existing proposed)]
+    (cond-> effects
+      (not (empty? to-add))
+      (assoc :dispatch-n (map (fn [url] [::parse-url url]) to-add))
+      (not (empty? to-remove))
+      (assoc :dispatch [::dissoc-results to-remove]))))
 
 ;; Events for url handling
 
 (re-frame/reg-event-fx
- ;; This event should not be dispatched to from any components.
- ;; Instead dispatch to one of
- ;;   add-url
- ;;   remove-url
- ;;   replace-urls
- ::-parse-url
+ ::parse-url
  (fn-traced
   [{:keys [db]} [_ url]]
   {:db         (update db :loading conj url)
@@ -100,37 +128,34 @@
                 :on-success      [::parse-success url]
                 :on-failure      [::parse-failure url]}}))
 
+;; Events that components should dispatch to
+
 (re-frame/reg-event-fx
- ::add-url
+ ::add-url-from-input
  (fn-traced
-  [{:keys [db]} [_]]
+  [{:keys [db]} _]
   (let [url (:url-input db)
-        db-changes {:db (dissoc db :url-input)}]
-    (if (get-in db [:results url])
-      ;; Already present in results, no changes required
-      db-changes
-      ;; Wasn't in results, do parsing
-      (assoc
-       db-changes
-       :dispatch [::-parse-url url])))))
+        existing (set (keys (:results db)))
+        proposed (conj existing url)]
+    (handle-proposed {:db (assoc db :url-input "")} proposed))))
+
+(re-frame/reg-event-fx
+ ::replace-urls-from-input
+ (fn-traced
+  [{:keys [db]} _]
+  (let [proposed #{(:url-input db)}]
+    (handle-proposed {:db (assoc db :url-input "")} proposed))))
+
+(re-frame/reg-event-fx
+ ::replace-from-addr-bar
+ [(re-frame/inject-cofx :addr-bar-urls)]
+ (fn-traced
+  [{:keys [db addr-bar-urls]} _]
+  (let [proposed (set addr-bar-urls)]
+    (handle-proposed {:db db} proposed))))
 
 (re-frame/reg-event-fx
  ::remove-url
  (fn-traced
-  [{:keys [db]} [_ url]]
-  {:db (update db :results dissoc url)
-   ::addr-bar-remove-urls [url]}))
-
-(re-frame/reg-event-fx
- ::replace-urls
- (fn-traced
-  [{:keys [db]} [_ urls]]
-  (let [existing (set (keys (:results db)))
-        new (if (= :from-url-input urls) #{(:url-input db)} (set urls))
-        to-add (set/difference new existing)
-        to-remove (set/difference existing new)]
-    {:db (cond-> db
-           true (update :results #(apply dissoc % to-remove))
-           (= :from-url-input urls) (dissoc :url-input))
-     :dispatch-n (map (fn [url] [::-parse-url url]) to-add)
-     ::addr-bar-remove-urls to-remove})))
+  [effects [_ url]]
+  (assoc effects :dispatch [::dissoc-results #{url}])))

@@ -5,7 +5,6 @@
             [frontend.events :as events]
             [frontend.views :as views]
             [frontend.config :as config]
-            [frontend.query :refer [addr-bar-urls]]
             [goog.events :as gevents])
   (:import [goog History]
            [goog.history Html5History EventType]
@@ -31,7 +30,7 @@
   (gevents/listen
    (init-history)
    EventType.NAVIGATE
-   #(re-frame/dispatch [::events/replace-urls (addr-bar-urls)])))
+   #(re-frame/dispatch [::events/replace-from-addr-bar])))
 
 (defn dev-setup []
   (when config/debug?
@@ -40,7 +39,7 @@
 
 (defn mount-root []
   (re-frame/clear-subscription-cache!)
-  (re-frame/dispatch [::events/replace-urls (addr-bar-urls)])
+  (re-frame/dispatch [::events/replace-from-addr-bar])
   (reagent/render [views/app]
                   (.getElementById js/document "app")))
 

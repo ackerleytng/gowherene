@@ -23,13 +23,13 @@
 
 (defn append-button []
   [:a#append.button.is-info
-   {:on-click #(re-frame/dispatch [::events/add-url])}
+   {:on-click #(re-frame/dispatch [::events/add-url-from-input])}
    [:span.icon
     [:i.fas.fa-angle-double-right]]])
 
 (defn plot-button []
   [:a#plot.button.is-info
-   {:on-click #(re-frame/dispatch [::events/replace-urls :from-url-input])}
+   {:on-click #(re-frame/dispatch [::events/replace-urls-from-input])}
    [:span.icon
     [:i.fas.fa-angle-right]]])
 
