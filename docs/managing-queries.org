@@ -1,0 +1,169 @@
+* How queries are managed in gowherene
+
+** Background
+
+gowherene allows the user to plot addresses from URLs of listicles. It turns addresses in lists of (food, or other) recommendations into markers on a map.
+
+The page affords the user three actions:
+
+1. Append the recommendations from the URL in the search inputbox to the currently plotted recommendations
+2. Replace the currently plotted recommendations with recommendations from a new URL
+3. Delete all recommendations associated with a certain URL
+
+In addition, if a user shares this page's URL with a friend, the friend must see the same markers on the map!
+
+I considered implementing sharable URLs using some hash of the queried URLs or perhaps URL slugs, but to avoid storing any state on the backend, I opted to just store the queried URLs as query parameters in the URL.
+
+Storing queried URLs as query parameters also has the following benefits
+
++ The savvy user can modify URLs directly in the address bar
++ If a user is currently at the listicle, he/she could edit the address bar and prefix it with ~https://gowherene.herokuapp.com/?q=~ to quickly plot all the addresses on that listicle.
++ The user can use back and forward in the browser to move between different plotted listicles
+
+Storing queried URLs as query parameters means affording the user two more actions:
+
+1. Pasting a URL containing query parameters should cause the URLs in the query parameters to be parsed and plotted
+2. The browser's back and forward buttons should cause parsing and plotting as necessary.
+
+** Problem
+
+Maintaining state (URLs that should be parsed and plotted) cleanly and neatly has turned into an interesting task!
+
+Frontend frameworks like React, or in my case, reagent, are great at managing state on the page itself. In this case, state extends beyond the page to the address bar. This adds a layer of complication, since setting the URL in the address bar is effectful and cannot be handled declaratively like other components.
+
+re-frame provides a nice framework for handling state on the page, as well as side effects, using a system of pure event handlers, interceptors and effects.
+
+I tried two different flows for managing queried URLs on gowherene, to manage the following 5 actions
+
+1. Appending recommendations from a URL (append button)
+2. Deleting recommendations from a URL (delete button)
+3. Replacing recommendations with new recommendations from a URL (plot button)
+4. Replacing recommendations with new recommendations from the address bar on page load
+5. Replacing recommendations with new recommendations from the address bar on browser navigation
+
+** Flow A
+
+#+attr_html: :style max-width: 800px
+[[file:flow-a.svg]]
+
+Flow A was my first implementation, which is able to handle all the above actions.
+
+Handling button actions was mostly a matter of dispatching to the right events.
+
+The append button would dispatch to ~::add-url~ which doesn't take any arguments, since this event can only be dispatched to from the append button. The URL to be parsed has to be from the URL input box.
+
+The delete button dispatches to ~::remove-url~ and provides an argument ~url~, which is the URL to remove from the results.
+
+The plot button dispatches to ~::replace-urls~ and specifies ~:from-url-input~ to differentiate itself from replacements originating from page load or browser navigation.
+
+To handle page load, I dispatched the outcome of reading the address bar (URLs) to ~::replace-urls~, and to handle browser navigation, I listened on ~EventType.NAVIGATE~ (from Google Closure Library) and dispatched to ~::replace-urls~, as if the page loaded again.
+
+*** Event handlers in Flow A
+
+Removal of plotted recommendations from URLs is an easier process because there is no need to fetch any data from backend. Also, the nature of removals is that if the element does not already exist, removing is just a no-op. Hence, removals in Flow A just involves direct dissocs from ~app-db~ and effecting removal from address bar.
+
+Removal is simpler than additions, because when adding a new URL, there is generally a computation step necessary, so that gowherene will not
+
++ Fetch from the backend when data is already available
++ Override data that exists with unknowns
+
+In Flow A, this computation, or diffing with existing plotted information, is distributed in the event handlers ~::add-url~ and ~::replace-urls~. After the diffing is done, ~::-parse-url~ is dispatched to, to do the fetch from the backend. On ~::parse-success~, Flow A will then add the URL to the address bar if parsing was successful, or show an error message otherwise.
+
+*** Weaknesses of Flow A
+
+While Flow A worked, it just didn't feel elegant to me.
+
++ Too many conditionals: Because replacement of queried URLs were dispatched to from page load, browser navigation, and the plot button, the ~::replace-urls~ event handler had to disambiguate the source of these actions
++ Doing the diffing in too many places: ~::add-url~ had to diff the new URL with existing ones, and ~::replace-urls~ had to do diffing too.
+
+** Flow B
+
+After exploring Flow A, I decided to explore an alternative flow.
+
+#+attr_html: :style max-width: 800px
+[[file:flow-b.svg]]
+
+Armed with an understanding of the UX corner cases after building Flow A, Flow B was designed with these in mind.
+
+*** Unifying handling of results and query parameters
+
+I designed Flow B beginning with the effects, of which there are two groups:
+
+1. Updating the components on the page
+2. Updating the URL in the address bar with the query parameters
+
+I want these two effects to be tied together in some way; if the components update, the address bar should update accordingly.
+
+The component updates can be handled by reagent, so I would just update ~app-db~ and the components should update.
+
+This leaves the URL in the address bar, which I implemented as effects.
+
+Flow B was designed beginning with two event handlers ~::assoc-results~ and ~::dissoc-results~. ~::assoc-results~ will assoc new data from the backend, together with its URL, into the ~:results~ map in ~app-db~, and ~::dissoc-results~ removes a URL from ~:results~ in ~app-db~.
+
+Each of these event handlers have an accompanying effect ~::addr-bar-add-url~ and ~::addr-bar-remove-urls~, which handle the address bar.
+
+**** Why not implement these effects as the ~:after~ part of an interceptor?
+
+Honestly, I'm not sure.
+
+The ~:after~ interceptor has the benefit of feeling more "tied together" with the event handler and rightfully so, but in terms of implementation, it is still (a) one interceptor definition (b) one vector in the event handler to associate the interceptor. The effects route is (a) one effect definition and (b) one assoc in the event handler to trigger the effect after this event handler.
+
+Also, both interceptors and effects are fair places to implement a side effecting function, and deeper in the implementation, effects are probably implemented using interceptors.
+
+I kind of just stuck with the effects since it was already implemented from Flow A.
+
+*** Reducing the conditional logic
+
+Instead of having many different actions dispatch to a single event handler that has conditionals to disambiguate the different sources, I had the actions dispatch to their own associated handlers. The append button would dispatch to ~::add-url-from-input~, and the plot button dispatches to  ~::replace-urls-from-input~. The page load function and navigation hook have the same function, and therefore dispatch to ~::replace-from-addr-bar~.
+
+Each of these event handlers, now have the same goal, which is to assemble their proposed set of URLs to parse and plot. This removes some conditionals associated with handling different scenarios. Each handler also knows where it is called from, and can clear the ~:url-input~ search bar if the source of the information was the search bar.
+
+These event handlers would then call ~handle-proposed~ to diff the proposed URL set with the currently plotted ones, which would in turn trigger parsing of the URL if necessary.
+
+The delete button dispatches to ~::remove-url~, which in turn dispatches directly to ~::dissoc-results~ without passing through the ~handle-proposed~ function. In this case, no proposal is necessary since we pretty much know we're just going to dissoc this URL from the results.
+
+**** Why not just get the delete button to dispatch directly to ~::dissoc-results~?
+
+I decided to have a separate event handler to handle user interactions for extensibility. This would allow me to maintain the interfaces if there are changes to the functionality provided by ~::dissoc-results~.
+
+**** Functions vs dispatching
+
+While working on the re-frame mindset, the first thing I reached out for when implementing ~handle-proposed~ was to implement it as yet another "internal" event handler that the user interaction event handlers ~::add-url-from-input~, ~::replace-urls-from-input~ and ~::replace-from-addr-bar~ would dispatch to.
+
+I quickly caught myself and wondered why I should be using the re-frame machinery when a simple function would do.
+
+This of course triggered more consideration of why the other later "internal" event handlers should be event handlers rather than just functions.
+
+Some functions were implemented as event handlers because I wanted the functionality in the event handlers to be run asynchronously. This applies for ~::parse-url~, ~::parse-success~ and ~::parse-failure~, and of course the user interaction event handlers.
+
+~::assoc-results~ and ~::dissoc-results~ were implemented as event handlers because I wanted to be able to use effects associated with these event handlers, and I don't want to combine the effects into the event handlers, because that would destroy the purity of any associated event handler.
+
+~handle-proposed~ did not cause any side effects, and could be called synchronously from the three user interaction event handlers, and so there wasn't any reason to just use a regular clojurescript function, and hence I implemented it as a normal function.
+
+*** Centralizing reading of info
+
+Previously in Flow A, reading of information for computation logic was done in different places. If the URL input box is the source of input, reading that input would be done in the event handler, which had access to ~app-db~, from which ~:url-input~ could be extracted. If the source of input was from the address bar, to have a pure event handler, the action that triggered the dispatch would first read the information from the address bar, then pass that information to the event handler through an argument.
+
+In Flow B, I chose to centralize all reading to done in the event handler. To have pure event handlers, I used an interceptor to ~read-addr-bar~ and add the queried URLs as coeffects for the event handler.
+
+*** Centralizing diffing logic
+
+In Flow A, diffing of the proposed state was done in different event handlers. In Flow B, by aligning on the concept that user interaction event handlers should prepare proposed query URL sets, the diffing logic could be cleanly centralized in the ~handle-proposed~ function.
+
+Using sets as proposals also has the benefit of offloading de-duplication of query URLs in the proposed set to the data structure, since sets remove duplicates.
+
+**** Functions vs coding it in the event handler
+
+While writing Flow B, I also considered when functionality should be extracted into its own function or event handler and when it should be directly implemented. For example, in both ~::add-url-from-input~ and ~::replace-urls-from-input~, I had to clear ~:url-input~ in the event handler. Should that be its own function?
+
+Eventually I decided that minor functionality (like a 1 liner) should just be coded into the event handler. It is likely only to be a single step and it wasn't a big enough concept that I might add additional logic common to all callers. If there were to be additional logic, I could do the refactoring in future.
+
+** Conclusion/Comments
+
+It was pretty fun going through the different ways to set up the event handlers and subscriptions in re-frame, just for this small app. I'm glad using the address bar meant I had a chance to work through interceptors, coeffects and effects.
+
+I still wish there was a way to subscribe (like use a ~reg-sub~) to watch some information in the app-db and then trigger side-effect-y updates to places other than the components, such as the address bar.
+
+I briefly considered subscribing to watch for changes to ~:results~ in ~app-db~ and rendering an empty div while updating the address bar in a component, but was advised against doing so on clojurians, who suggested that I tried using a combination of coeffect/effects instead.
+
+If I could subscribe for changes, I would just watch ~:results~ in ~app-db~ and update the address bar with any changes. Any thoughts?
