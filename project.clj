@@ -40,7 +40,7 @@
                     :output-to            "resources/public/js/compiled/main.js"
                     :output-dir           "resources/public/js/compiled/out"
                     :asset-path           "js/compiled/out"
-                    :source-map           "target/cljs-output/public/js/compiled/main.js.map"
+                    :source-map           true
                     :source-map-timestamp true
                     :preloads             [devtools.preload
                                            day8.re-frame-10x.preload]
