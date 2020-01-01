@@ -1,4 +1,4 @@
-(ns frontend.core
+(ns ^:figwheel-hooks frontend.core
   (:require [reagent.core :as reagent]
             [re-frame.core :as re-frame]
             [day8.re-frame.http-fx]
@@ -37,7 +37,8 @@
     (enable-console-print!)
     (println "dev mode")))
 
-(defn mount-root []
+;; Add :after-load to call function after each figwheel refresh
+(defn ^:after-load mount-root []
   (re-frame/clear-subscription-cache!)
   (re-frame/dispatch [::events/replace-from-addr-bar])
   (reagent/render [views/app]

@@ -121,7 +121,7 @@
   [{:keys [db]} [_ url]]
   {:db         (update db :loading conj url)
    :http-xhrio {:method          :get
-                :uri             "/parse"
+                :uri             "/parse/"
                 :params          {:url url}
                 :timeout         15000
                 :response-format (ajax/json-response-format {:keywords? true})

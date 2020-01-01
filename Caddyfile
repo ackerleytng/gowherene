@@ -1,0 +1,7 @@
+localhost:2015/ {
+    proxy / localhost:9500
+}
+
+localhost:2015/parse {
+    proxy / localhost:3000
+}

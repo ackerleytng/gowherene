@@ -40,7 +40,24 @@ the code often refers to `data` or `address-info`, a map of:
 
 ## Developing
 
-First start a local mongodb server with `docker-compose up`.
+### Install and start `caddy`
+
+Download caddy and put it on your `PATH`: https://caddyserver.com/download/linux/amd64?license=personal&telemetry=off
+
+Start caddy: (it will read `Caddyfile`)
+
+```
+$ caddy
+Activating privacy features... done.
+
+Serving HTTP on port 2015
+http://localhost:2015/
+http://localhost:2015/parse
+
+< ... elided ... >
+```
+
+### Starting the backend
 
 In emacs, do `cider-jack-in`, then at the `user>` prompt, do
 
@@ -50,87 +67,69 @@ user> (start)
 {:started ["#'dev/gowherene-app"]}
 ```
 
-And then in another terminal window, do
+And then check that the backend is up with `curl`:
 
 ```
-curl -X GET 'http://localhost:3000/parse?url=http://thesmartlocal.com/read/restaurants-with-no-gst' | jq
+curl -X GET 'http://localhost:3000/?url=http://thesmartlocal.com/read/restaurants-with-no-gst' | jq
 ```
 
-To work on the frontend, do `C-c M-J` and when prompted, enter `figwheel`.
+### Starting the figwheel-main dev server (frontend)
 
-Surf to `http://localhost:3000` to begin.
+Do `C-c M-J` and when prompted, enter `figwheel-main`. When asked for build, enter `dev`
+
+A browser tab should open, pointing to `http://localhost:9500`.
+
+We'll be using caddy to proxy to that instead, so surf to `http://localhost:2015` (caddy) to begin.
+
+#### figwheel-main dev server on cli
+
+You can also start the `figwheel-main` dev server on the command line with
+
+```
+lein fig:dev
+```
+
+## Checking production cljs build
+
+Do a production cljs build:
+
+```
+lein fig:prod
+```
+
+This should compile cljs and output to `cljs-prod-js/main.js`
+
+### Starting the backend
+
+Either start the backend through emacs (same steps as development), or run the jar:
+
+```
+java -jar target/gowherene-0.1.0-SNAPSHOT-standalone.jar
+```
+
+### Start `caddy`
+
+```
+caddy -conf Caddyfile-non-figwheel
+```
+
+Surf to `http://localhost:2015` to check that it works.
 
 ## Environment variables
 
 In `gowherene`, I am expecting the following environment variables to be in place.
 
-| key                 | value                                                      |
-| ---                 | ---                                                        |
-| `:google-api-token` | API token for Google Maps geocoding API                    |
-| `:port`             | The port to run the server at (3000 would be good for dev) |
-| `:mongodb-uri`      | MongoDB uri for logging requests                           |
-
+| key                 | value                                            |
+| ---                 | ---                                              |
+| `:google-api-token` | API token for Google Maps geocoding API          |
+| `:port`             | The port to run the server at (defaults to 3000) |
 
 For development, I use a `.lein-env` file in the project directory, which looks like
 
 ```
-{:google-api-token "xxx"
- :database-url     "xxx"
- :mongodb-uri      "xxx"}
-```
-
-## Viewing/erasing logs
-
-There are a few lein aliases defined for viewing/erasing the request logs. Request logs can be viewed with
-
-```
-$ lein requests-show
-```
-
-To show logs stored with heroku, use
-
-```
-$ MONGODB_URI='<copy from heroku env>' lein requests-show
-```
-
-For the development MongoDB, I'm using the the mongodb docker image (see `docker-compose.yml`)
-
-To erase the logs, do
-
-```
-$ lein requests-cleanup
-```
-
-The free databases have limits, hence the need to erase periodically.
-
-## Deploying on heroku
-
-Create the app with
-
-```
-$ heroku create gowherene --no-remote
-```
-
-Package for deployment with
-
-```
-$ lein clean
-$ lein uberjar
-```
-
-Install the heroku toolbelt, then
-
-```
-$ heroku plugins:install heroku-cli-deploy
-$ heroku deploy:jar target/gowherene-0.1.0-SNAPSHOT-standalone.jar --app gowherene
-```
-
-To see logs,
-
-```
-$ heroku logs --tail --app gowherene
+{:google-api-token "xxx"}
 ```
 
 ## License
 
-Copyright © 2018 ackerleytng
+Copyright © 2020 ackerleytng

@@ -9,5 +9,9 @@ pom.xml.asc
 /.lein-*
 /.nrepl-port
 /figwheel_server.log
-/resources/public/js/compiled
 .DS_Store
+
+# Because figwheel development mode will write here
+/resources/public/js
+# Because production js will be written here
+/cljs-prod-js
