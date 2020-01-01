@@ -1,0 +1,3 @@
+{$CADDY_DOMAIN}
+root /srv
+proxy /parse/ backend:{$BACKEND_PORT}

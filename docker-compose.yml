@@ -1,0 +1,24 @@
+version: "3.7"
+
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: ./compose/caddy.Dockerfile
+    volumes:
+      - "./certs:/root/.caddy"
+    environment:
+      ACME_AGREE: "true"
+      CADDY_DOMAIN: ${CADDY_DOMAIN:-localhost:80}
+      BACKEND_PORT: ${BACKEND_PORT:-3000}
+    ports:
+      - "80:80"
+      - "443:443"
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./compose/backend.Dockerfile
+    environment:
+      GOOGLE_API_TOKEN: ${GOOGLE_API_TOKEN:?Please provide GOOGLE_API_TOKEN as an environment variable}
+      PORT: ${BACKEND_PORT:-3000}
