@@ -1,11 +1,8 @@
-localhost:2015/ {
+localhost:2015 {
     root ./resources/public
+    proxy /parse/ localhost:3000
 }
 
 localhost:2015/js {
     root ./cljs-prod-js
-}
-
-localhost:2015/parse {
-    proxy / localhost:3000
 }
