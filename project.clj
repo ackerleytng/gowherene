@@ -6,6 +6,10 @@
 
                  ;; For backend
                  [compojure "1.6.1"]
+                 [ring/ring-defaults "0.3.2"]
+                 [ring/ring-json "0.5.0"]
+                 [ring/ring-jetty-adapter "1.8.0"]
+
                  [environ "1.1.0"]
                  [clj-http "3.9.1"]
                  [xtreak/clj-http-ssrf "0.2.2"]
