@@ -17,7 +17,7 @@ I considered implementing sharable URLs using some hash of the queried URLs or p
 Storing queried URLs as query parameters also has the following benefits
 
 + The savvy user can modify URLs directly in the address bar
-+ If a user is currently at the listicle, he/she could edit the address bar and prefix it with ~https://gowherene.herokuapp.com/?q=~ to quickly plot all the addresses on that listicle.
++ If a user is currently at the listicle, he/she could edit the address bar and prefix it with ~https://gowherene.ackerleytng.com/?q=~ to quickly plot all the addresses on that listicle.
 + The user can use back and forward in the browser to move between different plotted listicles
 
 Storing queried URLs as query parameters means affording the user two more actions:

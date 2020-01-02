@@ -1,6 +1,6 @@
 (defproject gowherene "0.1.0-SNAPSHOT"
   :description "gowherene plots addresses from recommendation pages in Singapore on a map!"
-  :url "https://gowherene.herokuapp.com"
+  :url "https://gowherene.ackerleytng.com"
   :min-lein-version "2.5.3"
   :dependencies [[org.clojure/clojure "1.10.0"]
 
