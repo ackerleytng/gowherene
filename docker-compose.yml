@@ -15,7 +15,7 @@ services:
       BACKEND_PORT: ${BACKEND_PORT:-3000}
     ports:
       - "443:443"
-    command: /bin/bash -c "envsubst < /etc/nginx/conf.d/gowherene.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"
+    command: /bin/sh -c "envsubst < /etc/nginx/conf.d/gowherene.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"
 
   backend:
     build:
