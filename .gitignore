@@ -16,5 +16,8 @@ pom.xml.asc
 # Because production js will be written here
 /cljs-prod-js
 
-# For caddy in container
+# Don't upload secrets
 /certs
+
+# These are the docker images
+*.tar
