@@ -89,9 +89,9 @@ You can also start the `figwheel-main` dev server on the command line with
 lein fig:dev
 ```
 
-## Checking production cljs build
+## Staging
 
-Do a production cljs build:
+To check production cljs build, first do a production cljs build:
 
 ```
 lein fig:prod
@@ -110,12 +110,28 @@ java -jar target/gowherene-0.1.0-SNAPSHOT-standalone.jar
 ### Start `caddy`
 
 ```
-caddy -conf Caddyfile-non-figwheel
+caddy -conf Caddyfile-staging
 ```
 
 Surf to `http://localhost:2015` to check that it works.
 
-## Environment variables
+## Production/deployment flow
+
+Build docker images
+
+```
+make images
+```
+
+Upload them to server (I'm using aws with a cloudflare CDN)
+
+```
+scp nginx.tar backend.tar aws:
+```
+
+On the aws instance, update the `docker-compose.yml` with `git pull`, then `docker-compose restart`
+
+## Backend environment variables
 
 In `gowherene`, I am expecting the following environment variables to be in place.
 

@@ -1,0 +1,25 @@
+* Why use caddy for development and nginx for production?
+
+Mostly because caddy is easier to tinker with, but nginx has a proven
+production/performance track record.
+
+I started off wanting to use caddy for production because caddy had built-in
+SSL cert management and could get signed certificates from LetsEncrypt.
+
+Then, I wanted to move away from having to provide environment variables for
+starting the containers, because that made it hard for containers to restart
+automatically on boot, without having to set the environment variables system
+wide.
+
+While refactoring environment variables out, I found that Cloudflare, as a CDN
+service, provides specific certificates for the channel between Cloudflare and
+the origin server, including support for authenticated origin pulls, so I
+decided to upgrade the security together with the config change.
+
+Caddy is also nice because it is a single binary. I haven't figured out a nice
+workflow (especially with figwheel) for working with a JVM in a container, so
+it's nice to be able to just start a single binary to handle proxying, for
+development.
+
+To test the backend image (staging) we don't need to meddle with certs and
+stuff, so using caddy with `Caddyfile-staging` is sufficient.
