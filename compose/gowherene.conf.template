@@ -1,0 +1,16 @@
+server {
+  listen 443 ssl default_server;
+  ssl_certificate ${NGINX_SSL_CERTIFICATE};
+  ssl_certificate_key ${NGINX_SSL_CERTIFICATE_KEY};
+  ssl_client_certificate ${NGINX_SSL_CLIENT_CERTIFICATE};
+  ssl_verify_client on;
+  server_name ${NGINX_SERVER_NAME};
+
+  location / {
+    root /usr/share/nginx/html;
+  }
+
+  location /parse/ {
+    proxy_pass http://backend:${BACKEND_PORT};
+  }
+}
