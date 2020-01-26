@@ -11,7 +11,7 @@
            (or
             ;; Look for the secrets file first (deployment)
             (let [secrets-file "/run/secrets/google-api-token"]
-              (and (.exists (io/file secrets-file)) (slurp secrets-file)))
+              (and (.exists (io/file secrets-file)) (str/trim (slurp secrets-file))))
             ;; Otherwise use environment variable
             (env :google-api-token))]
     (do (println (str "Using token |" token "|")) token)
