@@ -21,6 +21,11 @@ services:
     build:
       context: .
       dockerfile: ./compose/backend.Dockerfile
+    secrets:
+      - google-api-token
     environment:
-      GOOGLE_API_TOKEN: ${GOOGLE_API_TOKEN:?Please provide GOOGLE_API_TOKEN as an environment variable}
       PORT: ${BACKEND_PORT:-3000}
+
+secrets:
+  google-api-token:
+    file: ./google-api-token

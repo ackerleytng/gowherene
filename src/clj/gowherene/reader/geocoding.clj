@@ -1,9 +1,21 @@
 (ns gowherene.reader.geocoding
-  (:require [clojure.string :as str]
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]
             [clj-http.client :as client]
             [environ.core :refer [env]]
             [clojure.data.json :as json]
             [gowherene.reader.regexes :refer [re-postal-code]]))
+
+(defonce google-api-token
+  (if-let [token
+           (or
+            ;; Look for the secrets file first (deployment)
+            (let [secrets-file "/run/secrets/google-api-token"]
+              (and (.exists (io/file secrets-file)) (slurp secrets-file)))
+            ;; Otherwise use environment variable
+            (env :google-api-token))]
+    (do (println (str "Using token |" token "|")) token)
+    (throw (RuntimeException. "Google api token missing"))))
 
 (defn- raw-geocode-google
   [address]
@@ -11,7 +23,7 @@
                                "https://maps.googleapis.com/maps/api/geocode/json"
                                {:throw-exceptions false
                                 :query-params {:address address
-                                               :key (env :google-api-token)}})]
+                                               :key google-api-token}})]
     (if (= 400 status)
       {:error (str "Google geocoding returned 400 for '" address "'") :data nil}
       {:error nil :data (json/read-json body)})))

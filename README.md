@@ -146,6 +146,8 @@ For development, I use a `.lein-env` file in the project directory, which looks 
 {:google-api-token "xxx"}
 ```
 
+In production, gowherene will preferentially use the docker secret `/run/secrets/google-api-token`, if the file exists, falling back to the environment variable `GOOGLE_API_TOKEN`.
+
 ## License
 
 Copyright © 2020 ackerleytng
