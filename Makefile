@@ -1,10 +1,14 @@
 build: build-frontend build-backend
 	docker-compose build
 
-build-frontend:
+build-frontend: cljs-prod-js/main.js
+
+cljs-prod-js/main.js:
 	lein fig:prod
 
-build-backend:
+build-backend: target/gowherene-0.1.0-SNAPSHOT-standalone.jar
+
+target/gowherene-0.1.0-SNAPSHOT-standalone.jar:
 	lein uberjar
 
 clean:
