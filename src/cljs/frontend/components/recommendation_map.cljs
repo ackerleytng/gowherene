@@ -2,6 +2,7 @@
   (:require [clojure.set :as set]
             [clojure.string :as str]
             [reagent.core :as r]
+            [reagent.dom :as rdom]
             [re-frame.core :as re-frame]
             [frontend.subs :as subs]
             [frontend.events :as events]
@@ -58,7 +59,7 @@
      {:display-name "recommendation-map"
       :component-did-mount
       (fn [this]
-        (let [map-canvas (r/dom-node this)
+        (let [map-canvas (rdom/dom-node this)
               map-options #js {:disableDefaultUI true
                                :zoomControl true}
               gmap (js/google.maps.Map. map-canvas map-options)]

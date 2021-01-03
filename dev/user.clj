@@ -12,7 +12,6 @@
    [clojure.string :as string]
    [clojure.test :as test]
    [clojure.tools.namespace.repl :refer [clear]]
-   [alembic.still :as alembic]
    [dev :refer [start stop refresh refresh-all reset]]
 
    [hickory.zip :refer [hickory-zip]]
