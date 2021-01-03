@@ -4,14 +4,12 @@
 
 ;; cljsbuild compiler options
 {:main frontend.core
- :output-to "resources/public/js/main.js"
- :output-dir "resources/public/js"
+ :output-to "target/public/js/main.js"
+ :output-dir "target/public/js"
  ;; :asset-path tells the cljs compiler how to reference other js files
  ;;   main.js is dependent on.
  ;; This is the relative path from the root of the webserver
  :asset-path "js"
  :source-map true
  :source-map-timestamp true
- :preloads             [day8.re-frame-10x.preload]
- :closure-defines      {"re_frame.trace.trace_enabled_QMARK_"        true
-                        "day8.re_frame.tracing.trace_enabled_QMARK_" true}}
+ :closure-defines      {frontend.config/parse-path "http://localhost:3000/parse/"}}
