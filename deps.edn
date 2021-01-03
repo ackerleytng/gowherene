@@ -1,22 +1,36 @@
 {:deps {org.clojure/clojure {:mvn/version "1.10.1"}
-        compojure {:mvn/version "1.6.2"}
+        compojure/compojure {:mvn/version "1.6.2"}
         ring/ring-defaults {:mvn/version "0.3.2"}
         ring/ring-json {:mvn/version "0.5.0"}
         ring/ring-jetty-adapter {:mvn/version "1.8.2"}
-        ring-cors {:mvn/version "0.1.13"}
+        ring-cors/ring-cors{:mvn/version "0.1.13"}
 
-        environ {:mvn/version "1.1.0"}
-        clj-http {:mvn/version "3.11.0"}
+        environ/environ{:mvn/version "1.1.0"}
+        clj-http/clj-http {:mvn/version "3.11.0"}
         xtreak/clj-http-ssrf {:mvn/version "0.2.2"}
-        hickory {:mvn/version "0.7.1"}
+        hickory/hickory {:mvn/version "0.7.1"}
 
         ;; frontend
         org.clojure/clojurescript {:mvn/version "1.10.773"}
         com.bhauman/figwheel-main {:mvn/version "0.2.12"}
-        reagent {:mvn/version "0.10.0"}
-        re-frame {:mvn/version "1.1.2"}
+        reagent/reagent {:mvn/version "0.10.0"}
+        re-frame/re-frame {:mvn/version "1.1.2"}
         day8.re-frame/http-fx {:mvn/version "0.2.2"}
         com.cemerick/url {:mvn/version "0.1.1"}
         cljsjs/google-maps {:mvn/version "3.18-1"}}
- :aliases {:fig {:main-opts ["-m" "figwheel.main"]}}
- :paths ["dev" "src/clj" "src/cljs" "resources" "target"]}
+ :aliases {;; frontend
+           :fig {:main-opts ["-m" "figwheel.main"]}
+           :frontend-paths ["src/cljs" "resources" "target"]
+
+           ;; backend
+           :dev {:extra-paths ["dev"]}
+           :backend-paths ["src/clj"]
+           :prod {:replace-paths [:backend-paths]}
+           :uberjar
+           {:replace-deps {seancorfield/depstar {:mvn/version "2.0.165"}}
+            :exec-fn hf.depstar/uberjar
+            :exec-args {:jar "target/gowherene.jar"
+                        :aot true
+                        :aliases [:prod]
+                        :main-class gowherene.core}}}
+ :paths [:frontend-paths :backend-paths]}

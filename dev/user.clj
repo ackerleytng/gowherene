@@ -12,7 +12,6 @@
    [clojure.string :as string]
    [clojure.test :as test]
    [clojure.tools.namespace.repl :refer [clear]]
-   [dev :refer [start stop refresh refresh-all reset]]
 
    [hickory.zip :refer [hickory-zip]]
    [hickory.convert :refer [hickory-to-hiccup]]
@@ -22,7 +21,8 @@
    [gowherene.reader.geocodables :refer [geocodables]]
    [gowherene.reader.location :refer [add-location]]
    [gowherene.reader.label :refer :all]
-   [gowherene.reader.utils :refer [content subtree]])
+   [gowherene.reader.utils :refer [content subtree]]
+   [gowherene.core :refer [start-gowherene]])
   (:import [java.lang Math]))
 
 (defn all-tags
