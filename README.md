@@ -21,9 +21,7 @@ gowherene can also plot addresses, not just recommendations! Try:
 
 ## Prerequisites
 
-You will need [Leiningen][] 2.5.3 or above installed.
-
-[leiningen]: https://github.com/technomancy/leiningen
+You will need at least version 1.10.1.727 of the Clojure CLI installed.
 
 ## `data`
 
@@ -40,29 +38,12 @@ the code often refers to `data` or `address-info`, a map of:
 
 ## Developing
 
-### Install and start `caddy`
-
-Download caddy and put it on your `PATH`: https://caddyserver.com/download/linux/amd64?license=personal&telemetry=off
-
-Start caddy: (it will read `Caddyfile`)
-
-```
-$ caddy
-Activating privacy features... done.
-
-Serving HTTP on port 2015
-http://localhost:2015/
-http://localhost:2015/parse
-
-< ... elided ... >
-```
-
 ### Starting the backend
 
 In emacs, do `cider-jack-in`, then at the `user>` prompt, do
 
 ```
-user> (start)
+user> (def server (start-gowherene))
 ... elided ...
 {:started ["#'dev/gowherene-app"]}
 ```
@@ -70,7 +51,13 @@ user> (start)
 And then check that the backend is up with `curl`:
 
 ```
-curl -X GET 'http://localhost:3000/?url=http://thesmartlocal.com/read/restaurants-with-no-gst' | jq
+curl -X GET 'http://localhost:3000/parse/?url=http://thesmartlocal.com/read/restaurants-with-no-gst' | jq
+```
+
+### Stopping the backend
+
+```
+user> (.stop server)
 ```
 
 ### Starting the figwheel-main dev server (frontend)
@@ -79,57 +66,33 @@ Do `C-c M-J` and when prompted, enter `figwheel-main`. When asked for build, ent
 
 A browser tab should open, pointing to `http://localhost:9500`.
 
-We'll be using caddy to proxy to that instead, so surf to `http://localhost:2015` (caddy) to begin.
-
-#### figwheel-main dev server on cli
-
-You can also start the `figwheel-main` dev server on the command line with
-
-```
-lein fig:dev
-```
-
-## Staging
-
-To check production cljs build, first do a production cljs build:
-
-```
-lein fig:prod
-```
-
-This should compile cljs and output to `cljs-prod-js/main.js`
-
-### Starting the backend
-
-Either start the backend through emacs (same steps as development), or run the jar:
-
-```
-java -jar target/gowherene-0.1.0-SNAPSHOT-standalone.jar
-```
-
-### Start `caddy`
-
-```
-caddy -conf Caddyfile-staging
-```
-
-Surf to `http://localhost:2015` to check that it works.
-
 ## Production/deployment flow
 
-Build docker images
+To build for production
 
 ```
-make images
+make build
 ```
 
-Upload them to server (I'm using aws with a cloudflare CDN)
+This should build both the backend and frontend.
+
+### Testing out the backend
 
 ```
-scp nginx.tar backend.tar aws:
+java -cp target/gowherene.jar clojure.main -m gowherene.core
 ```
 
-On the aws instance, update the `docker-compose.yml` with `git pull`, then `docker-compose restart`
+### Deploying backend
+
+Upload backend to server with
+
+```
+scp target/gowherene.jar alwaysdata:
+```
+
+### Deploying frontend
+
+Go to netlify, drag and drop `target/dist` to upload.
 
 ## Backend environment variables
 
@@ -146,8 +109,8 @@ For development, I use a `.lein-env` file in the project directory, which looks 
 {:google-api-token "xxx"}
 ```
 
-In production, gowherene will preferentially use the docker secret `/run/secrets/google-api-token`, if the file exists, falling back to the environment variable `GOOGLE_API_TOKEN`.
+> `.lein-env` works even without using leiningen because `environ` looks for that file
 
 ## License
 
-Copyright © 2020 ackerleytng
+Copyright © 2021 ackerleytng
