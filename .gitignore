@@ -11,12 +11,3 @@ pom.xml.asc
 /figwheel_server.log
 .DS_Store
 .cpcache
-
-# Because production js will be written here
-/cljs-prod-js
-
-# Don't upload secrets
-/certs
-
-# These are the docker images
-*.tar
