@@ -2,7 +2,7 @@
   (:require [environ.core :refer [env]]
             [ring.adapter.jetty :refer [run-jetty]]
             [ring.middleware.cors :refer [wrap-cors]]
-            [compojure.handler :as handler]
+            [ring.middleware.defaults :refer [wrap-defaults secure-api-defaults api-defaults]]
             [compojure.core :refer [routes]]
             [gowherene.app.api :refer [app-routes]])
   (:gen-class))
@@ -13,7 +13,11 @@
                                                #"https://gowherene.netlify.app"
                                                #"https?://localhost:?\d+"]
                  :access-control-allow-methods [:get])
-      handler/site
+      (wrap-defaults (assoc
+                      (if (env :gowherene-debug)
+                        api-defaults
+                        secure-api-defaults)
+                      :proxy true))
       (run-jetty {:join? false
                   :port (if-let [port (env :port)] (Integer. port) 3000)})))
 

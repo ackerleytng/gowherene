@@ -79,7 +79,15 @@ This should build both the backend and frontend.
 ### Testing out the backend
 
 ```
-java -cp target/gowherene.jar clojure.main -m gowherene.core
+GOWHERENE_DEBUG=1 java -cp target/gowherene.jar clojure.main -m gowherene.core
+```
+
+The above should start a server on port 3000.
+
+To query it,
+
+```
+curl -vv -X GET 'http://localhost:3000/parse/?url=http://thesmartlocal.com/read/restaurants-with-no-gst' | jq
 ```
 
 ### Deploying backend
