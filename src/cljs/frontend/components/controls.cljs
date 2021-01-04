@@ -6,13 +6,21 @@
 
 (def url-placeholder "Paste url here (from sethlui, smartlocal...)")
 
+(defn url-input-handle-key-up [visible-append-button key]
+  (when (= key "Enter")
+    (re-frame/dispatch
+     (if visible-append-button
+       [::events/add-url-from-input]
+       [::events/replace-urls-from-input]))))
+
 (defn url-input []
-  (let [value @(re-frame/subscribe [::subs/url-input])]
+  (let [value @(re-frame/subscribe [::subs/url-input])
+        visible-append-button @(re-frame/subscribe [::subs/show-append-button])]
     [:input#url.input
      {:type "text"
       :value value
       :placeholder url-placeholder
-      ;; :on-key-press url-input-handle-key-press
+      :on-key-up #(url-input-handle-key-up visible-append-button (.. % -key))
       :on-change #(re-frame/dispatch [::events/set-url-input (.. % -target -value)])}]))
 
 (defn clear-button []
