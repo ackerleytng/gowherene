@@ -20,6 +20,7 @@
         cljsjs/google-maps {:mvn/version "3.18-1"}}
  :aliases {;; frontend
            :fig {:main-opts ["-m" "figwheel.main"]}
+           :frontend {:main-opts ["-m" "figwheel.main" "-bo" "prod"]}
            :frontend-paths ["src/cljs" "resources" "target"]
 
            ;; backend

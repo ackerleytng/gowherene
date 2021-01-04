@@ -1,6 +1,6 @@
-;; figwheel-main can also make production builds: lein fig:prod
+;; Production build: clj -M:frontend
 {:main frontend.core
- :output-to "cljs-prod-js/main.js"
- :output-dir "cljs-prod-js"
+ :output-to "target/dist/js/main.js"
+ :output-dir "target/dist/js"
  :optimizations :advanced
  :closure-defines {goog.DEBUG false}}

@@ -1,25 +1,25 @@
-images: backend.tar nginx.tar
+all: backend frontend
 
-backend.tar: build
-	docker save -o backend.tar gowherene_backend
+frontend: target/dist/js/main.js target/dist/css/style.css target/dist/img/gowherene.svg target/dist/img/spinner.svg target/dist/index.html
 
-nginx.tar: build
-	docker save -o nginx.tar gowherene_nginx
+target/dist/js/main.js:
+	clj -M:frontend
 
-build: build-backend build-frontend
-	docker-compose build
+target/dist/%: resources/public/%
+	mkdir -p $$(dirname $@)
+	cp $< $@
 
-build-frontend: cljs-prod-js/main.js
+backend: target/gowherene.jar
 
-cljs-prod-js/main.js:
-	lein fig:prod
+target/gowherene.jar: pom.xml
+	clj -X:uberjar
 
-build-backend: target/gowherene-0.1.0-SNAPSHOT-standalone.jar
+pom.xml:
+	clj -A:prod -Spom
 
-target/gowherene-0.1.0-SNAPSHOT.jar target/gowherene-0.1.0-SNAPSHOT-standalone.jar:
-	lein uberjar
+.INTERMEDIATE: pom.xml
 
 clean:
-	rm -rf target cljs-prod-js *.tar
+	rm -rf target
 
-.PHONY: images build build-frontend build-backend clean
+.PHONY: all frontend backend clean
