@@ -11,13 +11,8 @@ target/dist/%: resources/public/%
 
 backend: target/gowherene.jar
 
-target/gowherene.jar: pom.xml
+target/gowherene.jar:
 	clj -X:uberjar
-
-pom.xml:
-	clj -A:prod -Spom
-
-.INTERMEDIATE: pom.xml
 
 clean:
 	rm -rf target
