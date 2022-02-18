@@ -45,9 +45,9 @@
      (> (count plotted-urls) 0))))
 
 (re-frame/reg-sub
- ::recommendations
+ ::results
  (fn [db _]
-   (apply concat (vals (:results db)))))
+   (:results db)))
 
 (re-frame/reg-sub
  ::url-list

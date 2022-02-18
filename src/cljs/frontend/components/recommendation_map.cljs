@@ -7,7 +7,7 @@
             [frontend.subs :as subs]
             [frontend.events :as events]
             [frontend.utils.scrolling :refer [scroll-to-id]]
-            [frontend.utils.gmap :refer [gmap-marker gmap-latlng gmap-latlng-bounds]]))
+            [frontend.utils.gmap :refer [gmap-marker gmap-latlng gmap-latlng-bounds gmap-icon]]))
 
 (def singapore-bounds
   (gmap-latlng-bounds (map gmap-latlng [{:lat 1.365035 :lng 103.644231}
@@ -25,13 +25,14 @@
     (if postal-code (str "S(" postal-code ")") "")]))
 
 (defn marker
-  [gmap {:keys [latlng label location]}]
+  [gmap {:keys [latlng label location color]}]
   (gmap-marker
    gmap
    {:position (gmap-latlng latlng)
     :label (when label (second (re-find #"^\s*(\d+)" label)))
     :title label
-    :content (render-location location)}))
+    :content (render-location location)
+    :icon (gmap-icon color)}))
 
 (defn update-map
   [gmap pairs-atom recommendations]
@@ -75,7 +76,25 @@
       (fn []
         [:div#recommendation-map {:style {:height "100vh"}}])})))
 
+(defn build-color [url]
+  (let [number (Math/abs (hash url))
+        hex (.toString number 16)
+        color (subs hex 0 6)]
+    (str "#" color)))
+
+(defn add-color [url recommendations]
+  (let [color (build-color url)]
+    (map #(assoc % :color color) recommendations)))
+
+(defn build-recommendations
+  "Given results, add color for each of the results"
+  [results]
+  (->> results
+       (map (fn [[k v]] (add-color k v)))
+       (apply concat)))
+
 (defn recommendation-map []
-  (let [recommendations @(re-frame/subscribe [::subs/recommendations])]
+  (let [results @(re-frame/subscribe [::subs/results])
+        recommendations (build-recommendations results)]
     [:div.container.is-widescreen.space-out-top
      [gmap {:recommendations recommendations}]]))
