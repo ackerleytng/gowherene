@@ -5,9 +5,9 @@
             [reagent.dom :as rdom]
             [re-frame.core :as re-frame]
             [frontend.subs :as subs]
-            [frontend.events :as events]
             [frontend.utils.scrolling :refer [scroll-to-id]]
-            [frontend.utils.gmap :refer [gmap-marker gmap-latlng gmap-latlng-bounds gmap-icon]]))
+            [frontend.utils.gmap :refer [gmap-marker gmap-latlng gmap-latlng-bounds gmap-icon]]
+            [frontend.utils.color :refer [build-color]]))
 
 (def singapore-bounds
   (gmap-latlng-bounds (map gmap-latlng [{:lat 1.365035 :lng 103.644231}
@@ -75,12 +75,6 @@
       :reagent-render
       (fn []
         [:div#recommendation-map {:style {:height "100vh"}}])})))
-
-(defn build-color [url]
-  (let [number (Math/abs (hash url))
-        hex (.toString number 16)
-        color (subs hex 0 6)]
-    (str "#" color)))
 
 (defn add-color [url recommendations]
   (let [color (build-color url)]
