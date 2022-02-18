@@ -24,11 +24,23 @@
     (or unit-number "")
     (if postal-code (str "S(" postal-code ")") "")]))
 
+(defn round [v decimal-places]
+  (let [p (Math/pow 10 decimal-places)]
+    (/ (Math/round (* v p)) p)))
+
+(defn add-random-offset
+  "Add random offset to lat and lng, to try to make completely overlapping
+  markers slightly distinct"
+  [{:keys [lat lng]}]
+  (let [r (rand)
+        offset (- r (round r 4))]
+    {:lat (+ lat offset) :lng (+ lng offset)}))
+
 (defn marker
   [gmap {:keys [latlng label location color]}]
   (gmap-marker
    gmap
-   {:position (gmap-latlng latlng)
+   {:position (gmap-latlng (add-random-offset latlng))
     :label (when label (second (re-find #"^\s*(\d+)" label)))
     :title label
     :content (render-location location)
