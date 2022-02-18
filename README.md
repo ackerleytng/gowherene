@@ -45,7 +45,7 @@ In emacs, do `cider-jack-in`, then at the `user>` prompt, do
 ```
 user> (def server (start-gowherene))
 ... elided ...
-{:started ["#'dev/gowherene-app"]}
+#'user/server
 ```
 
 And then check that the backend is up with `curl`:
@@ -71,7 +71,7 @@ A browser tab should open, pointing to `http://localhost:9500`.
 To build for production
 
 ```
-make build
+make
 ```
 
 This should build both the backend and frontend.
@@ -106,19 +106,21 @@ Go to netlify, drag and drop `target/dist` to upload.
 
 In `gowherene`, I am expecting the following environment variables to be in place.
 
-| key                 | value                                            |
-| ---                 | ---                                              |
-| `:google-api-token` | API token for Google Maps geocoding API          |
-| `:port`             | The port to run the server at (defaults to 3000) |
+| key                 | value                                                          |
+|---------------------|----------------------------------------------------------------|
+| `:google-api-token` | API token for Google Maps geocoding API                        |
+| `:port`             | The port to run the server at (defaults to 3000)               |
+| `:gowherene-debug`  | Set to `true` to prevent auto redirecting to HTTPS on port 443 |
 
 For development, I use a `.lein-env` file in the project directory, which looks like
 
 ```
-{:google-api-token "xxx"}
+{:google-api-token "xxx"
+ :gowherene-debug true}
 ```
 
 > `.lein-env` works even without using leiningen because `environ` looks for that file
 
 ## License
 
-Copyright © 2021 ackerleytng
+Copyright © 2022 ackerleytng

@@ -12,7 +12,7 @@ target/dist/%: resources/public/%
 backend: target/gowherene.jar
 
 target/gowherene.jar:
-	clj -X:uberjar
+	clj -T:build uber
 
 clean:
 	rm -rf target
