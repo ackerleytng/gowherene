@@ -6,7 +6,9 @@
 
 (defn color-box [color]
   [:svg {:width "12" :height "12" :style {:margin "3px"}}
-   [:rect {:width "12" :height "12" :style {:fill color :stroke-width 2 :stroke "#000"}}]])
+   [:rect {:width "12" :height "12"
+           :style {:fill color :fill-opacity 0.5
+                   :stroke-width 2 :stroke "#000" :stroke-opacity 0.5}}]])
 
 (defn url-row [url]
   [:div.panel-block {:style {:font-size "0.9em"}}

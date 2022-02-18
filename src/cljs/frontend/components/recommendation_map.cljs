@@ -24,23 +24,11 @@
     (or unit-number "")
     (if postal-code (str "S(" postal-code ")") "")]))
 
-(defn round [v decimal-places]
-  (let [p (Math/pow 10 decimal-places)]
-    (/ (Math/round (* v p)) p)))
-
-(defn add-random-offset
-  "Add random offset to lat and lng, to try to make completely overlapping
-  markers slightly distinct"
-  [{:keys [lat lng]}]
-  (let [r (rand)
-        offset (- r (round r 4))]
-    {:lat (+ lat offset) :lng (+ lng offset)}))
-
 (defn marker
   [gmap {:keys [latlng label location color]}]
   (gmap-marker
    gmap
-   {:position (gmap-latlng (add-random-offset latlng))
+   {:position (gmap-latlng latlng)
     :label (when label (second (re-find #"^\s*(\d+)" label)))
     :title label
     :content (render-location location)
@@ -92,11 +80,24 @@
   (let [color (build-color url)]
     (map #(assoc % :color color) recommendations)))
 
+(defn add-offset [latlng url]
+  (let [offset (/ (mod (hash url) 250) 1000000)
+        {:keys [lat lng]} latlng]
+    {:lat (+ lat offset) :lng (+ lng offset)}))
+
+(defn add-offset-to-recommendations
+  "Add random offset to lat and lng, to try to make completely overlapping
+  markers slightly distinct"
+  [url recommendations]
+  (map #(update % :latlng add-offset url) recommendations))
+
 (defn build-recommendations
   "Given results, add color for each of the results"
   [results]
   (->> results
-       (map (fn [[k v]] (add-color k v)))
+       (map (fn [[k v]] (->> v
+                             (add-color k)
+                             (add-offset-to-recommendations k))))
        (apply concat)))
 
 (defn recommendation-map []

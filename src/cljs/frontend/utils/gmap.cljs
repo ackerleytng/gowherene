@@ -47,7 +47,10 @@
   [color]
   ;; Thanks to https://stackoverflow.com/a/23163930/2108690 !
   {:path "M 12,2 C 8.1340068,2 5,5.1340068 5,9 c 0,5.25 7,13 7,13 0,0 7,-7.75 7,-13 0,-3.8659932 -3.134007,-7 -7,-7 z"
-   :fillOpacity 1
+   :fillOpacity 0.5
    :fillColor color
    :strokeWeight 2
+   :strokeOpacity 0.5
+   :anchor (js/google.maps.Point. 12 17)
+   :labelOrigin (js/google.maps.Point. 12 9)
    :scale 2})
