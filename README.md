@@ -76,6 +76,12 @@ make
 
 This should build both the backend and frontend.
 
+### Building in docker manually
+
+```shell
+DOCKER_BUILDKIT=1 docker build -t test .
+```
+
 ### Testing out the backend
 
 ```
@@ -83,6 +89,12 @@ GOWHERENE_DEBUG=1 java -cp target/gowherene.jar clojure.main -m gowherene.core
 ```
 
 The above should start a server on port 3000.
+
+With docker, do
+
+```shell
+docker run --rm --publish 3000:3000 --env PORT=3000 --env GOOGLE_API_TOKEN=<token> --env GOWHERENE_DEBUG=1 -it test
+```
 
 To query it,
 
@@ -92,11 +104,7 @@ curl -vv -X GET 'http://localhost:3000/parse/?url=http://thesmartlocal.com/read/
 
 ### Deploying backend
 
-Upload backend to server with
-
-```
-scp target/gowherene.jar alwaysdata:
-```
+Push to master, render.com will pick it up from GitHub and deploy it.
 
 ### Deploying frontend
 
