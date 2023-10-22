@@ -3,6 +3,7 @@
 FROM clojure:temurin-17-tools-deps-bullseye AS builder
 WORKDIR /tmp/
 COPY . .
+ENV GOOGLE_API_TOKEN=dummy-token-for-build
 RUN clj -T:build uber
 
 FROM gcr.io/distroless/java17-debian11
