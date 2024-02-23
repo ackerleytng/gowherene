@@ -57,7 +57,7 @@
 (defn- raw-geocode-onemap
   [address]
   (let [{:keys [status body]} (client/get
-                               "https://developers.onemap.sg/commonapi/search"
+                               "https://www.onemap.gov.sg/api/common/elastic/search"
                                {:throw-exceptions false
                                 :query-params {:searchVal address
                                                :returnGeom "Y"
