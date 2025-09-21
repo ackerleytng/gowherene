@@ -1,7 +1,9 @@
 (ns gowherene.app.handler
   (:require [clojure.string :as string]
             [gowherene.reader.core :as reader]
-            [gowherene.reader.client :as client]))
+            [gowherene.reader.client :as client]
+            [clojure.data.json :as json]
+            [ring.util.response :refer [response bad-request content-type]]))
 
 (defn validate [url]
   (if (nil? url)
@@ -46,11 +48,20 @@
     (zero? (count data)) {:error "Couldn't find any addresses! :(" :data nil}
     :else input))
 
+(defn parse-url [query-string]
+  (let [parts (string/split query-string #"=")]
+    (when (= (count parts) 2)
+      (second parts))))
+
 (defn handle
-  [url]
-  (-> url
-      validate
-      normalize
-      retrieve
-      process
-      cleanup))
+  [request]
+  (let [query-string (-> request :query-string)]
+    (if-let [url (parse-url query-string)]
+      (-> url
+          validate
+          normalize
+          retrieve
+          process
+          cleanup
+          response)
+      (bad-request))))

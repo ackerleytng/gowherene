@@ -3,11 +3,10 @@
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
             [ring.middleware.json :refer [wrap-json-response]]
-            [ring.util.response :as resp]
             [gowherene.app.handler :refer [handle]]))
 
 (defroutes api-routes
-  (GET "/parse/" [url] (resp/response (handle url)))
+  (GET "/parse/" [] handle)
   (route/not-found "Not Found"))
 
 (defroutes app-routes
