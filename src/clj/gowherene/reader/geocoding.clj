@@ -6,16 +6,23 @@
             [clojure.data.json :as json]
             [gowherene.reader.regexes :refer [re-postal-code]]))
 
+(defn- read-token
+  [secrets-file env-key]
+  (or
+   ;; Look for the secrets file first (deployment)
+   (and (.exists (io/file secrets-file)) (str/trim (slurp secrets-file)))
+   ;; Otherwise use environment variable / .lein-env
+   (env env-key)))
+
 (defonce google-api-token
-  (if-let [token
-           (or
-            ;; Look for the secrets file first (deployment)
-            (let [secrets-file "/run/secrets/google-api-token"]
-              (and (.exists (io/file secrets-file)) (str/trim (slurp secrets-file))))
-            ;; Otherwise use environment variable
-            (env :google-api-token))]
+  (if-let [token (read-token "/run/secrets/google-api-token" :google-api-token)]
     (do (println (str "Using token |" token "|")) token)
     (throw (RuntimeException. "Google api token missing"))))
+
+(defonce onemap-api-token
+  (when-let [token (read-token "/run/secrets/onemap-api-token" :onemap-api-token)]
+    (println "Loaded OneMap API token")
+    token))
 
 (defn- raw-geocode-google
   [address]
@@ -56,12 +63,14 @@
 
 (defn- raw-geocode-onemap
   [address]
-  (let [{:keys [status body]} (client/get
+  (let [opts (cond-> {:throw-exceptions false
+                      :query-params {:searchVal address
+                                     :returnGeom "Y"
+                                     :getAddrDetails "Y"}}
+               onemap-api-token (assoc :headers {"Authorization" onemap-api-token}))
+        {:keys [status body]} (client/get
                                "https://www.onemap.gov.sg/api/common/elastic/search"
-                               {:throw-exceptions false
-                                :query-params {:searchVal address
-                                               :returnGeom "Y"
-                                               :getAddrDetails "Y"}})]
+                               opts)]
     (if (not (= 200 status))
       {:error (str "Onemap geocoding returned " status " for '" address "'") :data nil}
       {:error nil :data (json/read-json body)})))
