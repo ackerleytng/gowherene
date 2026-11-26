@@ -16,7 +16,7 @@
    [hickory.zip :refer [hickory-zip]]
    [hickory.convert :refer [hickory-to-hiccup]]
    [gowherene.reader.core :refer :all]
-   [gowherene.reader.geocoding :refer [geocode-onemap geocode-google add-latlng]]
+   [gowherene.reader.geocoding :refer [geocode-onemap add-latlng]]
    [gowherene.reader.regexes :refer [re-postal-code re-spaces]]
    [gowherene.reader.geocodables :refer [geocodables]]
    [gowherene.reader.location :refer [add-location]]
