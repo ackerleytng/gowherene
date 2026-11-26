@@ -7,4 +7,5 @@
                         "--output-path" :final-output-dir
                         "--output-filename" :final-output-filename]}
  :optimizations :advanced
- :closure-defines {goog.DEBUG false}}
+ :closure-defines {goog.DEBUG false
+                   cljs.core/*global* "window"}}
