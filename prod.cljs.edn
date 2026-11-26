@@ -2,5 +2,9 @@
 {:main frontend.core
  :output-to "target/dist/js/main.js"
  :output-dir "target/dist/js"
+ :target :bundle
+ :bundle-cmd {:default ["npx" "webpack" "--mode=production" "--entry" :output-to
+                        "--output-path" :final-output-dir
+                        "--output-filename" :final-output-filename]}
  :optimizations :advanced
  :closure-defines {goog.DEBUG false}}
