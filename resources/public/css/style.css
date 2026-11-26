@@ -6,3 +6,11 @@
 .space-out-top {
   margin-top: 2vh;
 }
+
+.recommendation-map-marker {
+  background: transparent !important;
+}
+
+.modal {
+  z-index: 1100;
+}
