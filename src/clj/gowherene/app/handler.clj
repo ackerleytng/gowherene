@@ -55,13 +55,11 @@
 
 (defn handle
   [request]
-  (let [query-string (-> request :query-string)]
-    (if-let [url (parse-url query-string)]
-      (-> url
-          validate
-          normalize
-          retrieve
-          process
-          cleanup
-          response)
-      (bad-request))))
+  (let [url (-> request :params :url)]
+    (-> url
+        validate
+        normalize
+        retrieve
+        process
+        cleanup
+        response)))

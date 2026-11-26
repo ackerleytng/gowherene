@@ -6,7 +6,7 @@
             [gowherene.app.handler :refer [handle]]))
 
 (defroutes api-routes
-  (GET "/parse/" [] handle)
+  (GET "/parse/" request handle)
   (route/not-found "Not Found"))
 
 (defroutes app-routes
