@@ -1,5 +1,5 @@
-(ns ^:figwheel-hooks frontend.core
-  (:require [reagent.dom :as rdom]
+(ns ^:figwheel-always frontend.core
+  (:require [reagent.dom.client :as rdomc]
             [re-frame.core :as re-frame]
             [day8.re-frame.http-fx]
             [frontend.events :as events]
@@ -36,13 +36,12 @@
   (when config/debug?
     (println "dev mode")))
 
-;; Add :after-load to call function after each figwheel refresh
-(defn ^:after-load mount-root []
+(defonce root (delay (rdomc/create-root (.getElementById js/document "app"))))
+
+(defn ^:dev/after-load mount-root []
   (re-frame/clear-subscription-cache!)
   (re-frame/dispatch [::events/replace-from-addr-bar])
-  (let [root-el (.getElementById js/document "app")]
-    (rdom/unmount-component-at-node root-el)
-    (rdom/render [views/app] root-el)))
+  (rdomc/render @root [views/app]))
 
 (defn ^:export init []
   (re-frame/dispatch-sync [::events/initialize-db])

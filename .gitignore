@@ -11,3 +11,6 @@ pom.xml.asc
 /figwheel_server.log
 .DS_Store
 .cpcache
+/node_modules
+/out
+.rebel_readline_history
