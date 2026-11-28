@@ -14,3 +14,7 @@
 .modal {
   z-index: 1100;
 }
+
+#recommendation-map.leaflet-container {
+  touch-action: pan-y pinch-zoom;
+}

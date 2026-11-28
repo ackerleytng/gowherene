@@ -82,6 +82,18 @@
     (.addLayer lmap tile-layer)
     (.setPrefix (.-attributionControl lmap) "<a href=\"https://www.leafletjs.com\">Leaflet</a>")
     (.fitBounds lmap singapore-bounds)
+    ;; Require two fingers to pan the map on touch devices
+    (.addEventListener el "touchstart"
+                       (fn [e]
+                         (if (> (.. e -touches -length) 1)
+                           (.enable (.-dragging lmap))
+                           (.disable (.-dragging lmap))))
+                       #js {:passive true})
+    (.addEventListener el "touchend"
+                       (fn [e]
+                         (when (zero? (.. e -touches -length))
+                           (.enable (.-dragging lmap))))
+                       #js {:passive true})
     lmap))
 
 (defn the-map [{:keys [recommendations]}]
